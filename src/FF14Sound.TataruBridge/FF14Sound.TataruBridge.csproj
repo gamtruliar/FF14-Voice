@@ -1,0 +1,10 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Sharlayan" Version="9.0.34" />
+    <Compile Include="../../TataruHelper/TataruHelper/Services/GameMemory/IDirectDialogReader.cs;../../TataruHelper/TataruHelper/Services/GameMemory/HeuristicDirectDialogReader.cs;../../TataruHelper/TataruHelper/Services/GameMemory/IGameMemoryGateway.cs;../../TataruHelper/TataruHelper/Services/GameMemory/SharlayanGameMemoryGateway.cs;../../TataruHelper/TataruHelper/Services/GameMemory/TalkAddonRealtimeReader.cs;../../TataruHelper/TataruHelper/Services/GameMemory/AddonBounds.cs;../../TataruHelper/TataruHelper/Services/GameMemory/DialogueSurface.cs;../../TataruHelper/TataruHelper/Services/GameMemory/GameChoice.cs;../../TataruHelper/TataruHelper/Services/GameMemory/LiveReadingStats.cs;../../TataruHelper/TataruHelper/Services/GameMemory/RecentUtterance.cs;../../TataruHelper/TataruHelper/Services/GameMemory/SpeechBubbles.cs;../../TataruHelper/TataruHelper/Services/GameMemory/GameIcons.cs;../../TataruHelper/TataruHelper/Services/Logging/IAppLogger.cs" Link="TataruSource/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

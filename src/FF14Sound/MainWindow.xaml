@@ -1,0 +1,59 @@
+<Window x:Class="FF14Sound.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="FF14Sound · 翻譯與角色配音" Width="1120" Height="830" MinWidth="920" MinHeight="700" Background="#F4F6FA" FontFamily="Segoe UI, Microsoft JhengHei" FontSize="14">
+ <DockPanel Margin="24">
+  <StackPanel DockPanel.Dock="Top">
+   <TextBlock Text="FF14Sound" FontSize="30" FontWeight="Bold" Foreground="#172540"/>
+   <TextBlock Text="即時對白翻譯 · 角色聲音 clone" Foreground="#53627C" Margin="0,0,0,16"/>
+   <WrapPanel>
+    <Button Content="連接 FF14" Click="Connect_Click"/><Button Content="停止 / 略過配音" Click="Stop_Click"/>
+    <Button Content="VoxCPM Web 測試" Click="Web_Click"/>
+    <CheckBox x:Name="AutoSpeak" Content="自動翻譯 + 配音" VerticalAlignment="Center" Margin="12,0"/>
+    <CheckBox Content="置頂" VerticalAlignment="Center" Checked="Topmost_Checked" Unchecked="Topmost_Unchecked"/>
+   </WrapPanel>
+   <TextBlock Text="自動模式會按角色原聲 clone；目前亦會配已有遊戲原聲嘅對白。停止按鈕可略過今句。" Foreground="#725515" Margin="0,4,0,12"/>
+  </StackPanel>
+  <TextBlock x:Name="Status" DockPanel.Dock="Bottom" Text="未連接 · 可先手動測試" TextWrapping="Wrap" Margin="0,12,0,0" Foreground="#334966"/>
+  <Grid>
+   <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="24"/><ColumnDefinition Width="360"/></Grid.ColumnDefinitions>
+   <Grid>
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+    <StackPanel>
+     <WrapPanel>
+      <StackPanel><TextBlock Text="遊戲文字語言"/><ComboBox x:Name="SourceLanguage" Width="150" DisplayMemberPath="Label" SelectedValuePath="Code"/></StackPanel>
+      <StackPanel><TextBlock Text="翻譯目標"/><ComboBox x:Name="TargetLanguage" Width="160" DisplayMemberPath="Label" SelectedValuePath="Code"/></StackPanel>
+     </WrapPanel>
+     <TextBlock Text="角色名稱（同遊戲顯示完全相同）"/><TextBox x:Name="Speaker"/>
+     <TextBlock Text="原文 / 手動輸入測試"/><TextBox x:Name="Original" Height="100" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+    </StackPanel>
+    <StackPanel Grid.Row="1"><TextBlock Text="翻譯 / 可修改成粵語口語"/><TextBox x:Name="Translated" Height="100" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/></StackPanel>
+    <WrapPanel Grid.Row="2"><Button Content="翻譯" Click="Translate_Click"/><Button Content="配音" Click="Speak_Click"/><Button Content="翻譯 + 配音" Click="TranslateSpeak_Click"/></WrapPanel>
+    <ListBox x:Name="History" Grid.Row="3" Margin="0,12,0,0" ScrollViewer.HorizontalScrollBarVisibility="Disabled"><ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="6"/></DataTemplate></ListBox.ItemTemplate></ListBox>
+   </Grid>
+   <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+    <StackPanel>
+     <TextBlock Text="遊戲角色聲音庫" FontSize="20" FontWeight="SemiBold"/>
+     <TextBlock x:Name="LibraryStatus" Text="未載入" TextWrapping="Wrap" Margin="0,6" Foreground="#53627C"/>
+     <WrapPanel><Button Content="載入聲音庫…" Click="LoadLibrary_Click"/><Button Content="預載 VoxCPM" Click="Warmup_Click"/></WrapPanel>
+     <TextBlock Text="Clone 原聲版本（配音語言跟翻譯目標）" TextWrapping="Wrap"/>
+     <ComboBox x:Name="ReferenceLanguage" DisplayMemberPath="Label" SelectedValuePath="Code" SelectionChanged="ReferenceLanguage_Changed"/>
+     <TextBlock Text="角色代號 / 名稱（可輸入搜尋）"/>
+     <ComboBox x:Name="GameVoices" IsEditable="True" IsReadOnly="False" IsTextSearchEnabled="True" TextSearch.TextPath="Label" DisplayMemberPath="Label" SelectionChanged="GameVoice_Changed"/>
+     <TextBlock x:Name="VoiceDetails" TextWrapping="Wrap" Foreground="#53627C"/>
+     <Button Content="配對目前 NPC → 所選角色" Click="MapSpeaker_Click"/>
+     <Separator Margin="0,12"/>
+     <TextBlock Text="自訂聲音覆蓋（優先使用）" FontSize="16" FontWeight="SemiBold"/>
+     <ComboBox x:Name="Profiles" SelectionChanged="Profiles_SelectionChanged"/>
+     <TextBlock Text="NPC 名稱"/><TextBox x:Name="ProfileName"/>
+     <TextBlock Text="原角色聲音樣本"/><TextBox x:Name="ReferenceAudio" IsReadOnly="True" TextWrapping="Wrap"/>
+     <Button Content="選擇音檔…" Click="Browse_Click" HorizontalAlignment="Left"/>
+     <TextBlock Text="配音語言"/><ComboBox x:Name="SpeechLanguage" DisplayMemberPath="Label" SelectedValuePath="Code"/>
+     <TextBlock Text="風格指示（可留空）"/><TextBox x:Name="Control" TextWrapping="Wrap"/>
+     <TextBlock Text="樣本文字（可留空；填寫時語言須用 Auto）" TextWrapping="Wrap"/><TextBox x:Name="Transcript" Height="75" AcceptsReturn="True" TextWrapping="Wrap"/>
+     <TextBlock Text="一般 clone 只需音檔。粵語要用粵語文字；語言選擇本身唔會翻譯。" TextWrapping="Wrap" Foreground="#53627C"/>
+     <WrapPanel><Button Content="儲存角色" Click="SaveProfile_Click"/><Button Content="刪除角色" Click="DeleteProfile_Click"/></WrapPanel>
+     <Separator Margin="0,12"/><TextBlock Text="本機 VoxCPM API"/><TextBox x:Name="Server"/>
+     <Button Content="儲存設定" Click="SaveSettings_Click" HorizontalAlignment="Left"/>
+    </StackPanel>
+   </ScrollViewer>
+  </Grid>
+ </DockPanel>
+</Window>

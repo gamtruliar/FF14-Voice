@@ -1,0 +1,9 @@
+.cache/
+**/bin/
+**/obj/
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+artifacts/
+data/game-voices/
+*.user

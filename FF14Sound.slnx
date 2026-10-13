@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FF14Sound/FF14Sound.csproj" />
+    <Project Path="src/FF14Sound.TataruBridge/FF14Sound.TataruBridge.csproj" />
+    <Project Path="src/FF14Sound.Voices/FF14Sound.Voices.csproj" />
+  </Folder>
+  <Folder Name="/TataruHelper/">
+    <Project Path="TataruHelper/Translation/Translation.csproj" />
+  </Folder>
+</Solution>
