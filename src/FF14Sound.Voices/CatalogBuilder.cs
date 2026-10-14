@@ -82,10 +82,11 @@ public static class CatalogBuilder
         }
         var catalog = new VoiceCatalog(1, sqpack, DateTimeOffset.Now, voices.ToArray(), errors.ToArray());
         catalog.Save(Path.Combine(output, "catalog.json"));
+        NpcVoiceIndex.Build(sqpack, catalog, output);
         return catalog;
     }
 
-    private static Dictionary<uint, Dictionary<string, string>> ReadNames(GameData game)
+    internal static Dictionary<uint, Dictionary<string, string>> ReadNames(GameData game, string sheetName = "ENpcResident")
     {
         var result = new Dictionary<uint, Dictionary<string, string>>();
         // The installed client decides which localized sheets are available.
@@ -93,7 +94,7 @@ public static class CatalogBuilder
         {
             try
             {
-                var raw = game.Excel.GetRawSheet("ENpcResident", language);
+                var raw = game.Excel.GetRawSheet(sheetName, language);
                 if (raw.Language != language) continue;
                 foreach (var row in new ExcelSheet<RawRow>(raw))
                 {

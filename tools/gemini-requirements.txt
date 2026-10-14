@@ -1,0 +1,4 @@
+google-genai==2.30.1
+pydantic==2.12.5
+typing-extensions==4.15.0
+typing-inspection==0.4.2

@@ -10,6 +10,14 @@ public sealed class VoiceProfile
     public string Transcript { get; set; } = "";
     public string Language { get; set; } = "zh";
     public string Control { get; set; } = "";
+    public uint? Seed { get; set; }
+    public string VoiceIdentity { get; set; } = "";
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string EffectiveVoiceIdentity => VoiceIdentity.Length > 0 ? VoiceIdentity : "name:" + FF14Sound.Voices.VoiceResolver.Normalize(Speaker);
+    [System.Text.Json.Serialization.JsonIgnore]
+    public uint EffectiveSeed => Seed ?? VoiceSeed.ForSpeaker(Speaker);
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsFallback { get; set; }
     public override string ToString() => Speaker;
 }
 
@@ -18,22 +26,49 @@ public sealed class Settings
     public string Server { get; set; } = "http://127.0.0.1:8808";
     public string SourceLanguage { get; set; } = "en";
     public string TargetLanguage { get; set; } = "zh-TW";
+    public string TranslationEngine { get; set; } = "ollama";
+    public string OllamaUrl { get; set; } = "http://localhost:11434";
+    public string OllamaModel { get; set; } = "qwen3.5:9b";
+    public string OllamaBrowserSessionProtected { get; set; } = "";
+    public string GeminiModel { get; set; } = "gemini-3.8-flash";
+    public string GeminiKeyFile { get; set; } = "APIKey/qqDragon.txt";
     public bool AutoSpeak { get; set; } = true;
+    public bool StreamSpeech { get; set; } = true;
+    public double SpeechVolumePercent { get; set; } = 100;
+    public string SpeechMode { get; set; } = "translated";
+    public bool MainTopmost { get; set; }
+    public SubtitleSettings Subtitles { get; set; } = new();
     public string ReferenceLanguage { get; set; } = "ja";
     public string CatalogPath { get; set; } = "";
+    public string SpeechCacheFolder { get; set; } = "";
+    public string DefaultVoiceDescription { get; set; } = "自然、清晰、親切，中等語速，平穩敘述。";
     public Dictionary<string, string> SpeakerAliases { get; set; } = new();
     public List<VoiceProfile> Voices { get; set; } = [];
     public static string Folder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FF14Sound");
-    public static Settings Load()
+    public static Settings Load(string? path = null)
     {
-        var file = Path.Combine(Folder, "settings.json");
+        var file = path ?? Path.Combine(Folder, "settings.json");
         return File.Exists(file) ? JsonSerializer.Deserialize<Settings>(File.ReadAllText(file)) ?? new() : new();
     }
-    public void Save()
+    public void Save(string? path = null)
     {
-        Directory.CreateDirectory(Folder);
-        var file = Path.Combine(Folder, "settings.json");
+        var file = path ?? Path.Combine(Folder, "settings.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(file))!);
         File.WriteAllText(file + ".tmp", JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true }));
         File.Move(file + ".tmp", file, true);
     }
+}
+
+public sealed class SubtitleSettings
+{
+    public bool Enabled { get; set; }
+    public bool Topmost { get; set; } = true;
+    public string ContentMode { get; set; } = "translated";
+    public double FontSize { get; set; } = 28;
+    public double BackgroundOpacity { get; set; } = 0.8;
+    public bool Compact { get; set; }
+    public double? Left { get; set; }
+    public double? Top { get; set; }
+    public double Width { get; set; } = 960;
+    public double Height { get; set; } = 230;
 }

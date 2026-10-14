@@ -8,8 +8,10 @@
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="../../data/translation-glossary*.json" Link="Glossary/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <ProjectReference Include="../FF14Sound.Voices/FF14Sound.Voices.csproj" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />
+    <PackageReference Include="NAudio.WinMM" Version="2.2.1" />
     <ProjectReference Include="../../TataruHelper/Translation/Translation.csproj" />
     <None Include="../../TataruHelper/LICENSE" Link="Licenses/TataruHelper.txt" CopyToOutputDirectory="PreserveNewest" />
     <ProjectReference Include="../FF14Sound.TataruBridge/FF14Sound.TataruBridge.csproj" />

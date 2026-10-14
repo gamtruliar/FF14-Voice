@@ -6,38 +6,76 @@
    <WrapPanel>
     <Button Content="連接 FF14" Click="Connect_Click"/><Button Content="停止 / 略過配音" Click="Stop_Click"/>
     <Button Content="VoxCPM Web 測試" Click="Web_Click"/>
-    <CheckBox x:Name="AutoSpeak" Content="自動翻譯 + 配音" VerticalAlignment="Center" Margin="12,0"/>
-    <CheckBox Content="置頂" VerticalAlignment="Center" Checked="Topmost_Checked" Unchecked="Topmost_Unchecked"/>
+    <Button x:Name="ElevateButton" Content="以管理員重啟" Click="Elevate_Click" ToolTip="連接遊戲出現存取被拒時使用；Windows 會顯示 UAC 提示。"/>
+    <Button Content="字幕視窗" Click="Subtitles_Click"/>
+    <Button Content="配音快取" Click="SpeechCache_Click"/>
+    <CheckBox x:Name="AutoSpeak" Content="自動配音" VerticalAlignment="Center" Margin="12,0"/>
+    <CheckBox x:Name="StreamSpeech" Content="串流播放" ToolTip="Omni 收到首段就播；停止／換句會清走未播聲音。" VerticalAlignment="Center" Margin="0,0,12,0"/>
+    <CheckBox x:Name="MainPin" Content="置頂" VerticalAlignment="Center" Checked="Topmost_Checked" Unchecked="Topmost_Unchecked"/>
    </WrapPanel>
-   <TextBlock Text="自動模式會按角色原聲 clone；目前亦會配已有遊戲原聲嘅對白。停止按鈕可略過今句。" Foreground="#725515" Margin="0,4,0,12"/>
+   <WrapPanel Margin="0,8,0,0">
+    <TextBlock Text="配音音量" VerticalAlignment="Center"/>
+    <Slider x:Name="SpeechVolume" Minimum="0" Maximum="400" Value="100" TickFrequency="10" SmallChange="10" LargeChange="50" Width="210" Margin="12,0" VerticalAlignment="Center" ToolTip="0% 靜音；100% 原音量；超過 100% 放大。播放中可即時調整，過大失真時請調低。"/>
+    <TextBlock Text="{Binding ElementName=SpeechVolume, Path=Value, StringFormat={}{0:F0}%}" Width="48" VerticalAlignment="Center"/>
+    <Button Content="100%" Click="VolumePreset_Click" Tag="100" Padding="8,2"/>
+    <Button Content="200%" Click="VolumePreset_Click" Tag="200" Padding="8,2"/>
+   </WrapPanel>
+   <TextBlock Text="已識別有原錄音嘅句子交由 GAME 播放；只補冇聲對白。角色 REF 保留作 clone。" Foreground="#725515" Margin="0,4,0,12"/>
   </StackPanel>
   <TextBlock x:Name="Status" DockPanel.Dock="Bottom" Text="未連接 · 可先手動測試" TextWrapping="Wrap" Margin="0,12,0,0" Foreground="#334966"/>
   <Grid>
    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="24"/><ColumnDefinition Width="360"/></Grid.ColumnDefinitions>
-   <Grid>
+   <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+   <Grid Margin="0,0,6,0">
     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
     <StackPanel>
      <WrapPanel>
       <StackPanel><TextBlock Text="遊戲文字語言"/><ComboBox x:Name="SourceLanguage" Width="150" DisplayMemberPath="Label" SelectedValuePath="Code"/></StackPanel>
       <StackPanel><TextBlock Text="翻譯目標"/><ComboBox x:Name="TargetLanguage" Width="160" DisplayMemberPath="Label" SelectedValuePath="Code"/></StackPanel>
+      <StackPanel><TextBlock Text="配音內容"/><ComboBox x:Name="SpeechMode" Width="160" DisplayMemberPath="Label" SelectedValuePath="Code"/></StackPanel>
      </WrapPanel>
+     <TextBlock x:Name="SettingsStatus" Text="設定會自動儲存" FontSize="12" Foreground="#53627C" Margin="0,0,0,8"/>
+     <WrapPanel>
+      <StackPanel><TextBlock Text="翻譯引擎"/><ComboBox x:Name="TranslationEngine" Width="150" DisplayMemberPath="Label" SelectedValuePath="Code"/></StackPanel>
+      <StackPanel x:Name="OllamaModelPanel"><TextBlock Text="Ollama 模型"/><ComboBox x:Name="OllamaModel" Width="300" IsEditable="True" ToolTip="本機已有模型；翻譯效果及速度視乎模型。"/></StackPanel>
+      <StackPanel x:Name="GeminiModelPanel" Visibility="Collapsed"><TextBlock Text="Gemini 模型"/><ComboBox x:Name="GeminiModel" Width="300" IsEditable="True"/></StackPanel>
+      <Button x:Name="RefreshModels" Content="更新模型" Click="RefreshModels_Click" VerticalAlignment="Bottom"/>
+     </WrapPanel>
+     <TextBlock x:Name="TranslationStatus" TextWrapping="Wrap" Foreground="#53627C" FontSize="12" Margin="0,0,0,8"/>
      <TextBlock Text="角色名稱（同遊戲顯示完全相同）"/><TextBox x:Name="Speaker"/>
+     <Border Background="#E6EDF5" Padding="8" Margin="0,0,0,8" CornerRadius="4">
+      <StackPanel>
+       <TextBlock x:Name="CurrentVoice" Text="使用聲音：等候 NPC 名稱" TextWrapping="Wrap" Foreground="#274B70"/>
+       <TextBlock x:Name="CurrentVoiceDescriptionLabel" Text="Voice description" FontWeight="SemiBold" Margin="0,6,0,2"/>
+       <ScrollViewer MaxHeight="96" VerticalScrollBarVisibility="Auto"><TextBlock x:Name="CurrentVoiceDescription" Text="等候 NPC 名稱" TextWrapping="Wrap" Foreground="#334966"/></ScrollViewer>
+      </StackPanel>
+     </Border>
      <TextBlock Text="原文 / 手動輸入測試"/><TextBox x:Name="Original" Height="100" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
     </StackPanel>
     <StackPanel Grid.Row="1"><TextBlock Text="翻譯 / 可修改成粵語口語"/><TextBox x:Name="Translated" Height="100" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/></StackPanel>
     <WrapPanel Grid.Row="2"><Button Content="翻譯" Click="Translate_Click"/><Button Content="配音" Click="Speak_Click"/><Button Content="翻譯 + 配音" Click="TranslateSpeak_Click"/></WrapPanel>
-    <ListBox x:Name="History" Grid.Row="3" Margin="0,12,0,0" ScrollViewer.HorizontalScrollBarVisibility="Disabled"><ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="6"/></DataTemplate></ListBox.ItemTemplate></ListBox>
+    <ListBox x:Name="History" Grid.Row="3" MinHeight="80" MaxHeight="180" Margin="0,12,0,0" ScrollViewer.HorizontalScrollBarVisibility="Disabled"><ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="6"/></DataTemplate></ListBox.ItemTemplate></ListBox>
    </Grid>
+   </ScrollViewer>
    <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
     <StackPanel>
      <TextBlock Text="遊戲角色聲音庫" FontSize="20" FontWeight="SemiBold"/>
      <TextBlock x:Name="LibraryStatus" Text="未載入" TextWrapping="Wrap" Margin="0,6" Foreground="#53627C"/>
      <WrapPanel><Button Content="載入聲音庫…" Click="LoadLibrary_Click"/><Button Content="預載 VoxCPM" Click="Warmup_Click"/></WrapPanel>
-     <TextBlock Text="Clone 原聲版本（配音語言跟翻譯目標）" TextWrapping="Wrap"/>
+     <Button Content="NPC 聲音表 / 無原聲標記…" Click="NpcTable_Click"/>
+     <Button Content="全 client 預配／進度…" Click="Batch_Click"/>
+     <TextBlock Text="Default：只用文字及 Voice description 生成，唔使用 clone reference。" TextWrapping="Wrap" Margin="0,6" Foreground="#53627C"/>
+     <TextBlock Text="預設 voice description（NPC 表可個別覆蓋）" TextWrapping="Wrap"/>
+     <TextBox x:Name="DefaultDescription" Height="60" TextWrapping="Wrap" AcceptsReturn="True"/>
+     <TextBlock Text="Clone 原聲版本（配音語言跟所選內容）" TextWrapping="Wrap"/>
      <ComboBox x:Name="ReferenceLanguage" DisplayMemberPath="Label" SelectedValuePath="Code" SelectionChanged="ReferenceLanguage_Changed"/>
      <TextBlock Text="角色代號 / 名稱（可輸入搜尋）"/>
      <ComboBox x:Name="GameVoices" IsEditable="True" IsReadOnly="False" IsTextSearchEnabled="True" TextSearch.TextPath="Label" DisplayMemberPath="Label" SelectionChanged="GameVoice_Changed"/>
      <TextBlock x:Name="VoiceDetails" TextWrapping="Wrap" Foreground="#53627C"/>
+     <Button Content="試聽所選角色原聲" Click="PreviewReference_Click"/>
+     <Expander x:Name="CandidateEvidence" Header="名稱／任務配對證據" Margin="0,4">
+      <TextBlock x:Name="NameEvidence" TextWrapping="Wrap" Foreground="#53627C"/>
+     </Expander>
      <Button Content="配對目前 NPC → 所選角色" Click="MapSpeaker_Click"/>
      <Separator Margin="0,12"/>
      <TextBlock Text="自訂聲音覆蓋（優先使用）" FontSize="16" FontWeight="SemiBold"/>
@@ -50,7 +88,17 @@
      <TextBlock Text="樣本文字（可留空；填寫時語言須用 Auto）" TextWrapping="Wrap"/><TextBox x:Name="Transcript" Height="75" AcceptsReturn="True" TextWrapping="Wrap"/>
      <TextBlock Text="一般 clone 只需音檔。粵語要用粵語文字；語言選擇本身唔會翻譯。" TextWrapping="Wrap" Foreground="#53627C"/>
      <WrapPanel><Button Content="儲存角色" Click="SaveProfile_Click"/><Button Content="刪除角色" Click="DeleteProfile_Click"/></WrapPanel>
-     <Separator Margin="0,12"/><TextBlock Text="本機 VoxCPM API"/><TextBox x:Name="Server"/>
+     <Separator Margin="0,12"/><TextBlock Text="Ollama API URL（本機／遠端）"/><TextBox x:Name="OllamaUrl" ToolTip="輸入 HTTP／HTTPS base URL，再按更新模型。地址會自動儲存。"/>
+     <TextBlock Text="Cloudflare Access" Margin="0,8,0,0"/>
+     <WrapPanel>
+      <Button x:Name="AccessLogin" Content="網頁登入" Click="AccessLogin_Click"/>
+      <Button x:Name="AccessCancel" Content="取消登入" Click="AccessCancel_Click" IsEnabled="False"/>
+      <Button Content="清除本機登入" Click="AccessClear_Click"/>
+     </WrapPanel>
+     <TextBlock x:Name="AccessStatus" Text="未登入" TextWrapping="Wrap" Foreground="#53627C"/>
+     <TextBlock Text="Gemini API key 檔案"/><TextBox x:Name="GeminiKeyFile" ToolTip="只儲存檔案位置；key 由本機 Python SDK 讀取。"/>
+     <Button Content="選擇 key 檔案…" Click="BrowseGeminiKey_Click" HorizontalAlignment="Left"/>
+     <TextBlock Text="本機 VoxCPM API"/><TextBox x:Name="Server"/>
      <Button Content="儲存設定" Click="SaveSettings_Click" HorizontalAlignment="Left"/>
     </StackPanel>
    </ScrollViewer>

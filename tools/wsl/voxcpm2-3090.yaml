@@ -1,0 +1,39 @@
+# Based on vLLM-Omni v0.30.0 voxcpm2.yaml. Single FF14 speaker at a time;
+# reserve VRAM for the Windows game rather than filling the entire 24 GB card.
+async_chunk: false
+dtype: bfloat16
+stages:
+  - stage_id: 0
+    max_num_seqs: 1
+    gpu_memory_utilization: 0.65
+    kv_cache_memory_bytes: 2147483648
+    enforce_eager: true
+    trust_remote_code: true
+    enable_prefix_caching: false
+    async_scheduling: true
+    max_num_batched_tokens: 4096
+    max_model_len: 4096
+    devices: "0"
+    engine_extras:
+      hf_overrides:
+        voxcpm2_runtime_config:
+          # v0.30.0 talker fixes inference_timesteps=10 and cfg_value=2.0.
+          audio_emit_every: 1
+          vae_decode_every: 3
+          enable_batched_cfm: true
+          enable_batched_vae_decode: true
+          coalesce_audio_d2h: true
+          enable_loc_dit_fused_qkv: true
+          enable_loc_dit_fused_mlp: true
+          enable_loc_dit_zero_dt_cache: true
+          enable_loc_dit_skip_qkv_contig: true
+          enable_loc_dit_reduce_overhead_no_cg: true
+          enable_unified_decode_graph: true
+          unified_decode_graph_max_batch_size: 1
+    default_sampling_params:
+      temperature: 0.0
+      top_p: 1.0
+      top_k: -1
+      max_tokens: 4096
+      seed: 42
+      repetition_penalty: 1.0

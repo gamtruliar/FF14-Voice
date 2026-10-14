@@ -1,0 +1,12 @@
+[
+  {
+    "Id": "Lore:Scions", "Category": "Organization",
+    "Names": {"ja": "暁の血盟", "en": "Scions of the Seventh Dawn", "zh-CN": "拂晓血盟", "zh-TW": "拂曉血盟"},
+    "Sources": ["https://jp.finalfantasyxiv.com/endwalker/patch_6_0/", "https://actff1.web.sdo.com/project/20211212ffendwalker/patch60/index.html"]
+  },
+  {
+    "Id": "Lore:WarriorOfLight", "Category": "Lore",
+    "Names": {"ja": "光の戦士", "en": "Warrior of Light", "zh-CN": "光之战士", "zh-TW": "光之戰士"},
+    "Sources": ["https://jp.finalfantasyxiv.com/endwalker/patch_6_0/", "https://actff1.web.sdo.com/project/20211212ffendwalker/patch60/index.html"]
+  }
+]

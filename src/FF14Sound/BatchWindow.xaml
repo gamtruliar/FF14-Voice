@@ -1,0 +1,34 @@
+<Window x:Class="FF14Sound.BatchWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="FF14Sound · 全 client 預配" Width="840" Height="700" MinWidth="700" MinHeight="620" Background="#F4F6FA" FontFamily="Segoe UI, Microsoft JhengHei" FontSize="14">
+ <Grid Margin="24">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <StackPanel>
+   <TextBlock Text="全 client 預配" FontSize="26" FontWeight="Bold" Foreground="#172540"/>
+   <TextBlock x:Name="Mode" Foreground="#53627C" Margin="0,8,0,14" TextWrapping="Wrap"/>
+  </StackPanel>
+  <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+   <StackPanel>
+    <TextBlock Text="FF14 SqPack 資料夾"/><TextBox x:Name="Sqpack"/>
+    <TextBlock Text="佇列資料夾"/><TextBox x:Name="Folder" IsReadOnly="True"/>
+    <TextBlock Text="音檔快取（同即時配音共用）"/><TextBox x:Name="Cache" IsReadOnly="True"/>
+    <WrapPanel>
+     <Button x:Name="Scan" Content="掃描全部／重建佇列" Click="Scan_Click"/>
+     <Button x:Name="Resume" Content="開始／續跑" Click="Resume_Click"/>
+     <Button x:Name="Pause" Content="暫停" Click="Pause_Click"/>
+     <Button Content="開啟資料夾" Click="Open_Click"/>
+    </WrapPanel>
+    <Border Background="#E6EDF5" CornerRadius="6" Padding="16" Margin="0,14,0,10">
+     <StackPanel>
+      <TextBlock x:Name="Summary" Text="未建立佇列" FontWeight="SemiBold" TextWrapping="Wrap"/>
+      <ProgressBar x:Name="Progress" Height="10" Minimum="0" Maximum="100" Margin="0,12"/>
+      <TextBlock x:Name="Counts" TextWrapping="Wrap"/>
+      <TextBlock x:Name="Estimate" Text="速度及剩餘時間會按實際生成更新。" Margin="0,8,0,0" TextWrapping="Wrap"/>
+     </StackPanel>
+    </Border>
+    <TextBlock x:Name="Deferred" TextWrapping="Wrap" Foreground="#725515" Margin="0,4,0,12"/>
+    <TextBlock Text="已配對角色用原聲 clone；default 首句用 Voice description，完成後保存角色專屬 REF，之後沿用。含動態變數、未知講者或未辨識格式嘅文字會保留喺索引，唔會亂配角色。" TextWrapping="Wrap" Foreground="#53627C" Margin="0,0,0,10"/>
+    <TextBlock Text="關閉呢個視窗會繼續背景預配。暫停會等目前一句完成並保存；續跑會略過有效快取。即時對白優先，但已開始嘅背景一句要等佢完成。磁碟剩餘少於 5 GiB 會自動暫停。" TextWrapping="Wrap" Foreground="#53627C"/>
+   </StackPanel>
+  </ScrollViewer>
+  <TextBlock x:Name="Status" Grid.Row="2" Text="就緒" TextWrapping="Wrap" Foreground="#334966" Margin="0,14,0,0"/>
+ </Grid>
+</Window>
