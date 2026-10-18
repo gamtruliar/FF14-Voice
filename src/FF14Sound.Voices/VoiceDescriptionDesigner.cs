@@ -7,7 +7,7 @@ namespace FF14Sound.Voices;
 /// <summary>Voice direction, not a claim about official casting or the sound of an actor.</summary>
 public static class VoiceDescriptionDesigner
 {
-    public const int Version = 3;
+    public const int Version = 4;
     private const string Wiki = "https://ffxiv.consolegameswiki.com/wiki/";
     private const string Guild = Wiki + "Guildmaster";
     private const string Inspector = "https://na.finalfantasyxiv.com/lodestone/topics/detail/3cfad29b51fcad14f3665c54b843d5232ab63217";
@@ -115,6 +115,15 @@ public static class VoiceDescriptionDesigner
     {
         row.DescriptionVersion = Version;
         row.DescriptionSource = "";
+        if (row.Names.Any(CollectiveSpeaker.IsCollective))
+        {
+            row.VoiceDescription = CollectiveSpeaker.Description;
+            row.DescriptionBasis = "群體講者名稱；多人齊聲演繹";
+            row.VoiceGender = "多人聲";
+            row.VoiceAge = "";
+            row.VoiceTraitsBasis = "群體講者，不分配單一人物性別或年齡";
+            return;
+        }
         var known = row.Names.Select(VoiceResolver.Normalize).Where(KnownByName.ContainsKey).Select(n => KnownByName[n]).Distinct().ToArray();
         if (known.Length == 1)
         {

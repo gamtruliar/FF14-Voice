@@ -45,7 +45,7 @@ public static class SpeechCache
     }
     private static string ReferenceId(VoiceProfile voice) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
         JsonSerializer.Serialize(new { identity = voice.EffectiveVoiceIdentity, seed = voice.EffectiveSeed, voice.Control }))));
-    private static bool CanLearn(VoiceProfile voice) => voice.IsFallback && !string.IsNullOrWhiteSpace(voice.Speaker);
+    private static bool CanLearn(VoiceProfile voice) => voice.IsFallback && !GroupSpeech.Applies(voice) && !string.IsNullOrWhiteSpace(voice.Speaker);
     private static string ReferencePath(string folder, VoiceProfile voice) => Owned(folder, Path.Combine(Root(folder), "learned-voices", ReferenceId(voice) + ".wav"));
     public static string? LearnedReference(string folder, VoiceProfile voice)
     {

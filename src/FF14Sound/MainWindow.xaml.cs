@@ -134,6 +134,7 @@ public partial class MainWindow : Window
         timer.Tick += Poll;
         player.MediaEnded += (_, _) => { StopPlayback(); Status.Text = "配音完成"; };
         player.MediaFailed += (_, e) => { StopPlayback(); Status.Text = "播放失敗：" + e.ErrorException.Message; };
+        InitializeToneControls();
         settingsReady = true;
         RefreshVoiceMapping();
         UpdateTranslationControls();
@@ -161,6 +162,7 @@ public partial class MainWindow : Window
     }
     private async Task RunSpeech(Func<CancellationToken, int, Task> action)
     {
+        if (restartingBackend) return;
         // Switching/replaying audio must leave this line's translation running.
         CancelSpeech();
         speechOperation = new();
@@ -172,6 +174,7 @@ public partial class MainWindow : Window
     }
     private async Task Run(Func<CancellationToken, int, Task> action)
     {
+        if (restartingBackend) return;
         Cancel();
         operation = new();
         var token = operation.Token;
@@ -193,17 +196,17 @@ public partial class MainWindow : Window
         var text = Original.Text.Trim();
         if (text.Length == 0) throw new InvalidOperationException("請輸入對白。");
         ObserveNpc();
-        var engine = TranslationEngine.SelectedValue?.ToString() ?? "ollama";
-        var options = engine == "gemini"
-            ? new TranslationOptions(engine, Server.Text.Trim(), GeminiModel.Text.Trim(), GeminiKeyFile.Text.Trim())
-            : new TranslationOptions(engine, OllamaUrl.Text.Trim(), OllamaModel.Text.Trim(), Access: CurrentOllamaAccess());
+        var options = CurrentTranslationOptions();
+        var engine = options.Engine;
+        var analyzeTone = ToneEnabled;
+        var context = ToneContext();
         var from = SourceLanguage.SelectedValue?.ToString() ?? "en";
         var to = TargetLanguage.SelectedValue?.ToString() ?? "zh-TW";
         var speaker = Speaker.Text.Trim();
         TranslationBaseStatus.Text = "準備翻譯來源…";
         var input = await TranslationBase.ResolveAsync(TranslationBaseMode.SelectedValue?.ToString() ?? "original", text, from, to, speaker, token);
         token.ThrowIfCancellationRequested();
-        if (version != generation || Original.Text.Trim() != text || Speaker.Text.Trim() != speaker) return;
+        if (version != generation || context != ToneContext()) return;
         TranslationBaseStatus.Text = input.Note;
         TranslationBaseStatus.ToolTip = input.Match is { } match ? match.Source + $" · {match.CandidateCount} 筆一致配對" : input.Note;
         TraditionalBaseText.Text = input.Match?.Text ?? "";
@@ -224,14 +227,29 @@ public partial class MainWindow : Window
         TranslationStatus.Text = label + " · 翻譯中…";
         Status.Text = "翻譯中…";
         var watch = Stopwatch.StartNew();
-        string translated;
-        try { translated = await translator.Translate(input.Text, input.Language, to, token, options, input.Speaker); }
-        catch (Exception ex) { if (version == generation) TranslationStatus.Text = label + " · " + (ex is OperationCanceledException ? "已取消" : ex.Message); throw; }
+        DialogueTranslation result;
+        if (analyzeTone) ToneStatus.Text = "翻譯及分析語氣中…";
+        try
+        {
+            result = analyzeTone
+                ? await translator.TranslateWithTone(input.Text, input.Language, to, token, options, input.Speaker)
+                : new(await translator.Translate(input.Text, input.Language, to, token, options, input.Speaker));
+        }
+        catch (Exception ex)
+        {
+            if (version == generation && context == ToneContext())
+            {
+                TranslationStatus.Text = label + " · " + (ex is OperationCanceledException ? "已取消" : ex.Message);
+                if (analyzeTone) ToneStatus.Text = "本次翻譯及語氣分析未完成";
+            }
+            throw;
+        }
         token.ThrowIfCancellationRequested();
-        if (version != generation || Original.Text.Trim() != text || Speaker.Text.Trim() != speaker) return;
-        Translated.Text = translated;
+        if (version != generation || context != ToneContext()) return;
+        Translated.Text = result.Text;
+        if (analyzeTone) SetTone(result.Tone, result.ToneWarning);
         TranslationStatus.Text = $"{label} · {watch.Elapsed.TotalSeconds:F2}s";
-        history.Insert(0, $"{Speaker.Text}: {translated}");
+        history.Insert(0, $"{Speaker.Text}: {result.Text}");
         while (history.Count > 100) history.RemoveAt(history.Count - 1);
         if (library.NativeAudio is not null && CurrentHasNativeAudio()) Status.Text = NativeAudioStatus;
         else if (streamingPlayer is null) Status.Text = "翻譯完成 · 可按配音";
@@ -251,13 +269,16 @@ public partial class MainWindow : Window
         ObserveNpc();
         settings.DefaultVoiceDescription = DefaultDescription.Text.Trim();
         var assignment = library.ResolveAssignment(name, selection.Language, settings, npcVoices.DescriptionFor(name, settings.DefaultVoiceDescription), npcVoices.Find(name)?.Key);
-        var voice = selection.Apply(assignment.Profile);
+        var tone = await ToneForSpeech(selection, name, token, version);
+        token.ThrowIfCancellationRequested();
+        if (version != speechGeneration) return;
+        var voice = DialogueTone.Apply(selection.Apply(assignment.Profile), tone);
         ShowVoiceMapping(name, assignment);
         var text = selection.Text;
         var voiceLabel = assignment.Label;
         if (StreamSpeech.IsChecked == true)
         {
-            Status.Text = $"{name} · 等候首段聲音…";
+            Status.Text = GroupSpeech.Applies(voice) ? $"{name} · 多人齊聲生成中…" : $"{name} · 等候首段聲音…";
             using var playback = new StreamingPcmPlayer { Gain = (float)(SpeechVolume.Value / 100), Levels = CurrentPlaybackLevels(), Speed = SpeechSpeed.Value };
             streamingPlayer = playback;
             var started = Stopwatch.StartNew(); bool first = true;
@@ -271,7 +292,7 @@ public partial class MainWindow : Window
                     if (first) { first = false; Status.Text = $"正在播放：{name} · 首段 {started.Elapsed.TotalSeconds:F2}s"; }
                 }, token, version, SpeechClient.CacheFolder(settings));
                 await playback.Finish(token);
-                if (version == speechGeneration) { RefreshVoiceMapping(); Status.Text = $"配音完成 · {(result.CacheHit ? "快取" : result.Streamed ? "串流" : "完整音檔（backend 未支援串流）")} · 首段 {result.FirstAudioSeconds:F2}s"; }
+                if (version == speechGeneration) { RefreshVoiceMapping(); Status.Text = $"配音完成 · {(result.CacheHit ? "快取" : GroupSpeech.Applies(voice) ? "多人齊聲" : result.Streamed ? "串流" : "完整音檔（backend 未支援串流）")} · 首段 {result.FirstAudioSeconds:F2}s"; }
             }
             finally { if (ReferenceEquals(streamingPlayer, playback)) streamingPlayer = null; }
             return;
@@ -320,6 +341,7 @@ public partial class MainWindow : Window
     {
         var engine = TranslationEngine.SelectedValue?.ToString();
         var local = engine == "ollama"; var cloud = engine == "gemini";
+        UpdateToneControls();
         OllamaModelPanel.Visibility = local ? Visibility.Visible : Visibility.Collapsed;
         GeminiModelPanel.Visibility = cloud ? Visibility.Visible : Visibility.Collapsed;
         OllamaModel.IsEnabled = local; OllamaUrl.IsEnabled = local; GeminiModel.IsEnabled = cloud;
@@ -408,14 +430,16 @@ public partial class MainWindow : Window
             mode == "original", library.NativeAudio is not null && CurrentHasNativeAudio(),
             // A manual playback choice supersedes queued auto speech, not the subtitle translation.
             () => !token.IsCancellationRequested && version == generation && expectedSpeech == speechGeneration &&
-                source == Original.Text && name == Speaker.Text);
+                source == Original.Text && name == Speaker.Text,
+            waitForTranslation: ToneEnabled);
     }
     private void Stop_Click(object sender, RoutedEventArgs e) { Cancel(); Status.Text = "已停止 / 略過今句配音"; }
     private void Topmost_Checked(object sender, RoutedEventArgs e) { Topmost = true; QueueSettingsSave(); }
     private void Topmost_Unchecked(object sender, RoutedEventArgs e) { Topmost = false; QueueSettingsSave(); }
     private async void Connect_Click(object sender, RoutedEventArgs e)
     {
-        timer.Stop(); Cancel();
+        if (restartingBackend) return;
+        timer.Stop(); Cancel(); ResetDialogueContext();
         var button = (Button)sender;
         button.IsEnabled = false;
         var reader = new GameReader();
@@ -443,19 +467,27 @@ public partial class MainWindow : Window
         try
         {
             var line = game.Read();
+            var signature = line is null ? "" : line.Value.Speaker + "\n" + line.Value.Text;
+            if (line is null || signature != lastLine) manualDialogueContext = false;
+            var revision = dialogueContext.Revision;
+            if (!manualDialogueContext)
+                dialogueContext.Observe(line?.Speaker, line?.Text, SourceLanguage.SelectedValue?.ToString() ?? "en",
+                    game.DialogueSurface, DateTimeOffset.UtcNow);
+            if (revision != dialogueContext.Revision) InvalidateTone();
             if (line is null)
             {
                 if (lastLine.Length > 0) { lastLine = ""; Cancel(); subtitlesCleared = true; UpdateSubtitles(); }
                 return;
             }
-            var signature = line.Value.Speaker + "\n" + line.Value.Text;
             if (signature == lastLine) return;
             lastLine = signature;
-            Translated.Clear(); Speaker.Text = line.Value.Speaker; Original.Text = line.Value.Text;
+            applyingGameDialogue = true;
+            try { Translated.Clear(); Speaker.Text = line.Value.Speaker; Original.Text = line.Value.Text; }
+            finally { applyingGameDialogue = false; }
             // Start work without blocking the reader: a newer line cancels this one.
             _ = Run((t, v) => ProcessDialogue(t, v, AutoSpeak.IsChecked == true));
         }
-        catch (Exception ex) { timer.Stop(); Cancel(); subtitlesCleared = true; UpdateSubtitles(); Status.Text = GameAccess.Record(ex, "讀取 FF14 對白"); }
+        catch (Exception ex) { timer.Stop(); Cancel(); ResetDialogueContext(); subtitlesCleared = true; UpdateSubtitles(); Status.Text = GameAccess.Record(ex, "讀取 FF14 對白"); }
         finally { reading = false; }
         await Task.CompletedTask;
     }
@@ -539,6 +571,7 @@ public partial class MainWindow : Window
         settings.GeminiModel = GeminiModel.Text.Trim();
         settings.GeminiKeyFile = GeminiKeyFile.Text.Trim();
         settings.AutoSpeak = AutoSpeak.IsChecked == true;
+        settings.AnalyzeSpeechTone = AnalyzeSpeechTone.IsChecked == true;
         settings.StreamSpeech = StreamSpeech.IsChecked == true;
         settings.SpeechVolumePercent = SpeechVolume.Value;
         settings.SpeechSpeed = SpeechSpeed.Value;
@@ -741,10 +774,11 @@ public partial class MainWindow : Window
         var learned = SpeechCache.LearnedReference(SpeechClient.CacheFolder(settings), assignment.Profile);
         var label = learned is not null ? "default · 沿用首次生成聲線（專屬 REF）" : assignment.Label;
         CurrentVoice.Text = $"使用聲音：{name} → {label} · Seed：{assignment.Profile.EffectiveSeed}";
-        CurrentVoice.ToolTip = (learned ?? assignment.Profile.ReferenceAudio) + (assignment.Profile.Control.Length > 0 ? "\nVoice description：" + assignment.Profile.Control : "");
-        var applied = !string.IsNullOrWhiteSpace(assignment.Profile.Control);
+        var effective = DialogueTone.Apply(assignment.Profile, CurrentTone).EffectiveControl;
+        CurrentVoice.ToolTip = (learned ?? assignment.Profile.ReferenceAudio) + (effective.Length > 0 ? "\nVoice description：" + effective : "");
+        var applied = !string.IsNullOrWhiteSpace(effective);
         CurrentVoiceDescriptionLabel.Text = applied ? "Voice description（套用於配音）" : "Voice description（未套用，使用 reference 音色）";
-        CurrentVoiceDescription.Text = applied ? assignment.Profile.Control : npcVoices.DescriptionFor(name, DefaultDescription.Text.Trim());
+        CurrentVoiceDescription.Text = applied ? effective : npcVoices.DescriptionFor(name, DefaultDescription.Text.Trim());
         CurrentVoiceDescription.ToolTip = npcVoices.Find(name)?.VoiceTraitsBasis;
     }
 }

@@ -21,9 +21,13 @@ internal static class IntegrationChecks
         Check(!GameAccess.Describe(new System.ComponentModel.Win32Exception(5), "連接 FF14", true).Contains("再連接"), "Elevated failure must not loop elevation");
         var folder = Path.Combine(Path.GetTempPath(), "ff14sound-tests-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(folder);
+        BackendRestartChecks.Run(folder);
         await TraditionalDialogueChecks.Run(folder);
         GlossaryChecks.Run(folder);
         TranslationOutputChecks.Run();
+        DialogueContextChecks.Run();
+        await DialogueToneChecks.Run(folder);
+        await GroupSpeechChecks.Run(folder);
         await VoiceSeedChecks.Run(folder);
         await SpeechCacheChecks.Run(folder);
         await BatchChecks.Run(folder);

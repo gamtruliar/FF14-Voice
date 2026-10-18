@@ -10,6 +10,12 @@ public sealed class VoiceProfile
     public string Transcript { get; set; } = "";
     public string Language { get; set; } = "zh";
     public string Control { get; set; } = "";
+    public bool IsGroup { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string UtteranceTone { get; set; } = "";
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string EffectiveControl => UtteranceTone.Length == 0 ? Control
+        : string.Join("；", new[] { Control.Trim(), "本句語氣：" + UtteranceTone }.Where(s => s.Length > 0));
     public uint? Seed { get; set; }
     public string VoiceIdentity { get; set; } = "";
     [System.Text.Json.Serialization.JsonIgnore]
@@ -34,6 +40,7 @@ public sealed class Settings
     public string GeminiModel { get; set; } = "gemini-3.8-flash";
     public string GeminiKeyFile { get; set; } = "APIKey/qqDragon.txt";
     public bool AutoSpeak { get; set; } = true;
+    public bool AnalyzeSpeechTone { get; set; }
     public bool StreamSpeech { get; set; } = true;
     public double SpeechVolumePercent { get; set; } = 100;
     public double SpeechSpeed { get; set; } = 1;

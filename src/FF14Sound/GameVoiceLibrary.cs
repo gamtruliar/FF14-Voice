@@ -49,6 +49,16 @@ public sealed class GameVoiceLibrary
         var match = Resolver?.Resolve(speaker, settings.ReferenceLanguage, settings.SpeakerAliases);
         if (match is null)
         {
+            if (CollectiveSpeaker.IsCollective(speaker))
+            {
+                var group = new VoiceProfile
+                {
+                    Speaker = speaker, Language = SpeechLanguageFor(targetLanguage), IsFallback = true, IsGroup = true,
+                    Control = CollectiveSpeaker.Description, VoiceIdentity = "group:" + VoiceResolver.Normalize(speaker),
+                    Seed = VoiceSeed.For("group:" + VoiceResolver.Normalize(speaker))
+                };
+                return new(VoiceSeed.ApplyOverride(settings, group), "群體", "三人齊聲", "");
+            }
             var description = string.IsNullOrWhiteSpace(fallbackDescription) ? settings.DefaultVoiceDescription : fallbackDescription;
             var fallback = new VoiceProfile
             {

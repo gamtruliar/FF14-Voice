@@ -31,16 +31,28 @@ public sealed class GeminiTranslation : IDisposable
         var result = await Send(server, "/api/gemini/models", new { key_file = ApiKeyFile.Resolve(keyFile) }, token);
         return result.GetProperty("models").EnumerateArray().Select(m => m.GetString()!).ToArray();
     }
-    public async Task<string> Translate(string text, string from, string to, string speaker, TranslationOptions options, CancellationToken token)
+    public async Task<string> Translate(string text, string from, string to, string speaker, TranslationOptions options, CancellationToken token) =>
+        TranslationOutput.Normalize(await Complete(text, speaker, OllamaTranslation.SystemPrompt(from, to, text, speaker), options, token));
+
+    public async Task<DialogueTranslation> TranslateWithTone(string text, string from, string to, string speaker, TranslationOptions options, CancellationToken token) =>
+        DialogueTone.ParseTranslation(await Complete(text, speaker, OllamaTranslation.SystemPrompt(from, to, text, speaker, true), options, token, true));
+
+    public async Task<string> AnalyzeTone(string text, string language, string speaker, TranslationOptions options, CancellationToken token) =>
+        DialogueTone.ParseAnalysis(await Complete(text, speaker, DialogueTone.AnalysisPrompt(language), options, token, true));
+
+    private async Task<string> Complete(string text, string speaker, string prompt, TranslationOptions options, CancellationToken token, bool withTone = false)
     {
         var result = await Send(options.Endpoint, "/api/gemini/translate", new
         {
             key_file = ApiKeyFile.Resolve(options.KeyFile), model = options.Model.Trim(), text, speaker,
-            system_prompt = OllamaTranslation.SystemPrompt(from, to, text, speaker)
+            system_prompt = prompt, previous_dialogue = withTone ? options.PreviousDialogue ?? [] : []
         }, token);
         token.ThrowIfCancellationRequested();
+        if (withTone && options.PreviousDialogue is { Count: > 0 } &&
+            (!result.TryGetProperty("dialogue_context_version", out var contextVersion) || contextVersion.GetInt32() != 1))
+            throw new InvalidOperationException("請重啟新版 VoxCPM backend，先可以將前幾句交畀 Gemini 分析。");
         var translation = result.GetProperty("text").GetString();
-        return TranslationOutput.Normalize(translation);
+        return translation ?? "";
     }
     public void Dispose() => client.Dispose();
 }

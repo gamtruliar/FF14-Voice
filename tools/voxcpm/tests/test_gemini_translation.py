@@ -52,6 +52,37 @@ def test_partial_result_and_sdk_errors_do_not_escape(monkeypatch):
         assert client.closed and client.async_closed
 
 
+def test_context_is_user_data_separate_from_current_line(monkeypatch):
+    client = FakeClient()
+    monkeypatch.setattr(gemini, 'create_client', lambda _: client)
+    previous = [{'speaker': 'A', 'text': '先に行って！', 'language': 'ja'}]
+    asyncio.run(gemini.translate('unused', 'gemini-3.8-flash', '大丈夫？', 'B', 'analyze current tone', previous))
+    data = json.loads(client.kwargs['contents'])
+    assert data == {'speaker': 'B', 'text': '大丈夫？', 'previous_dialogue': previous}
+    assert client.kwargs['config']['system_instruction'] == 'analyze current tone'
+
+
+def test_context_bridge_forwarding_and_limits(monkeypatch):
+    import ff14_server
+    from fastapi.testclient import TestClient
+    received = []
+    async def fake_translate(*args):
+        received.append(args)
+        return '{"tone":{"emotion":"worried","intensity":"low","pace":"slow"}}'
+    monkeypatch.setattr(ff14_server, 'gemini_translate', fake_translate)
+    client = TestClient(ff14_server.create_app(NS()))
+    payload = {'key_file': 'unused', 'model': 'fake-model', 'text': '大丈夫？', 'speaker': 'B',
+               'system_prompt': 'analyze', 'previous_dialogue': [{'speaker': 'A', 'text': '先に行って！', 'language': 'ja'}]}
+    response = client.post('/api/gemini/translate', json=payload)
+    assert response.status_code == 200 and response.json()['dialogue_context_version'] == 1
+    assert received[0][-1] == payload['previous_dialogue']
+    payload['previous_dialogue'] *= 5
+    assert client.post('/api/gemini/translate', json=payload).status_code == 422
+    payload.pop('previous_dialogue')
+    assert client.post('/api/gemini/translate', json=payload).status_code == 200
+    assert received[-1][-1] == []
+
+
 def test_cancel_closes_sdk_clients(monkeypatch):
     client = FakeClient(fail=asyncio.CancelledError())
     monkeypatch.setattr(gemini, 'create_client', lambda _: client)

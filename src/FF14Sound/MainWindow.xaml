@@ -69,6 +69,12 @@
       <Button x:Name="RefreshModels" Content="更新模型" Click="RefreshModels_Click" VerticalAlignment="Bottom"/>
      </WrapPanel>
      <TextBlock x:Name="TranslationStatus" TextWrapping="Wrap" Foreground="#53627C" FontSize="12" Margin="0,0,0,8"/>
+     <CheckBox x:Name="AnalyzeSpeechTone" Content="LLM 語氣分析（原文／譯文配音）" Margin="0,0,0,4" ToolTip="使用所選 Ollama／Gemini 分析當句情緒、強弱及語速，加入配音描述。翻譯時一併分析；單獨配音時先分析。適用即時及手動配音，全 client 預配不呼叫 LLM。"/>
+     <TextBlock x:Name="ToneStatus" Text="語氣分析已關閉" TextWrapping="Wrap" Foreground="#53627C" FontSize="12" Margin="0,0,0,8"/>
+     <WrapPanel Margin="0,0,0,8">
+      <TextBlock x:Name="DialogueContextStatus" VerticalAlignment="Center" Foreground="#53627C" FontSize="12" TextWrapping="Wrap"/>
+      <Button Content="新對話／清空上下文" Click="NewDialogue_Click" ToolTip="保留前 4 句；每句之間關框唔會即刻清空。連續 2 分鐘冇對白、實際顯示類型改變、讀取中斷、重新連接或手動改原文時清空。冇可靠劇情場次 ID，可按此掣手動分場。"/>
+     </WrapPanel>
      <TextBlock Text="角色名稱（同遊戲顯示完全相同）"/><TextBox x:Name="Speaker"/>
      <Border Background="#E6EDF5" Padding="8" Margin="0,0,0,8" CornerRadius="4">
       <StackPanel>
@@ -89,7 +95,9 @@
     <StackPanel>
      <TextBlock Text="遊戲角色聲音庫" FontSize="20" FontWeight="SemiBold"/>
      <TextBlock x:Name="LibraryStatus" Text="未載入" TextWrapping="Wrap" Margin="0,6" Foreground="#53627C"/>
-     <WrapPanel><Button Content="載入聲音庫…" Click="LoadLibrary_Click"/><Button Content="預載 VoxCPM" Click="Warmup_Click"/></WrapPanel>
+     <WrapPanel><Button Content="載入聲音庫…" Click="LoadLibrary_Click"/><Button Content="預載 VoxCPM" Click="Warmup_Click"/>
+      <Button x:Name="RestartBackend" Content="重啟 VoxCPM" Click="RestartBackend_Click" ToolTip="停止目前配音、暫停背景預配，再沿用現有參數重啟本機服務。Omni 只重啟 Windows API，保留 WSL 模型。"/>
+     </WrapPanel>
      <Button Content="NPC 聲音表 / 無原聲標記…" Click="NpcTable_Click"/>
      <Button Content="全 client 預配／進度…" Click="Batch_Click"/>
      <TextBlock Text="Default：只用文字及 Voice description 生成，唔使用 clone reference。" TextWrapping="Wrap" Margin="0,6" Foreground="#53627C"/>

@@ -68,7 +68,7 @@ async def list_models(key_file):
             client.close()
 
 
-async def translate(key_file, model, text, speaker, system_prompt):
+async def translate(key_file, model, text, speaker, system_prompt, previous_dialogue=None):
     model = model.removeprefix('models/')
     if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]{0,127}', model):
         raise GeminiFailure(422, 'Gemini 模型名稱格式不符。')
@@ -81,7 +81,7 @@ async def translate(key_file, model, text, speaker, system_prompt):
             config['thinking_config'] = {'thinking_level': 'LOW', 'include_thoughts': False}
         async with client.aio as api:
             result = await api.models.generate_content(model=model,
-                contents=json.dumps({'speaker': speaker, 'text': text}, ensure_ascii=False),
+                contents=json.dumps({'speaker': speaker, 'text': text, 'previous_dialogue': previous_dialogue or []}, ensure_ascii=False),
                 config=config)
         candidates = result.candidates or []
         if not candidates:

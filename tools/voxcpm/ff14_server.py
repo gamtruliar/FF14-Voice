@@ -59,11 +59,18 @@ class GeminiModelsRequest(BaseModel):
     key_file: str = Field(min_length=1, max_length=1024)
 
 
+class PreviousDialogueLine(BaseModel):
+    speaker: str = Field(default='', max_length=200)
+    text: str = Field(min_length=1, max_length=1600)
+    language: str = Field(min_length=1, max_length=20)
+
+
 class GeminiTranslationRequest(GeminiModelsRequest):
     model: str = Field(min_length=1, max_length=128)
     text: str = Field(min_length=1, max_length=4000)
     speaker: str = Field(default='', max_length=200)
     system_prompt: str = Field(min_length=1, max_length=8000)
+    previous_dialogue: list[PreviousDialogueLine] = Field(default_factory=list, max_length=4)
 
 
 class SerializedDemo(VoxCPMDemo):
@@ -92,8 +99,9 @@ def create_app(demo):
     @api.post('/api/gemini/translate')
     async def translate_gemini(request: GeminiTranslationRequest, http_request: Request):
         try:
-            text = await while_connected(http_request, gemini_translate(request.key_file, request.model, request.text, request.speaker, request.system_prompt))
-            return {'text': text, 'model': request.model, 'sdk': 'google-genai'}
+            text = await while_connected(http_request, gemini_translate(request.key_file, request.model, request.text, request.speaker, request.system_prompt,
+                [line.model_dump() for line in request.previous_dialogue]))
+            return {'text': text, 'model': request.model, 'sdk': 'google-genai', 'dialogue_context_version': 1}
         except GeminiFailure as exc:
             raise HTTPException(exc.status, str(exc)) from None
 
@@ -110,7 +118,9 @@ def create_app(demo):
 
     @api.get("/api/health")
     def health():
+        import os
         return {"status": "ready", "model_loaded": demo.voxcpm_model is not None,
+                "process_id": os.getpid(),
                 "languages": LANGUAGES, "text_only": True, "background_priority": True,
                 "backend": getattr(demo, "backend_name", "native-pytorch"),
                 "streaming": hasattr(demo, "stream_tts_audio")}

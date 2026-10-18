@@ -22,6 +22,22 @@ public sealed class Translator : IDisposable
     public Task<string[]> OllamaModels(string address, CancellationToken token, CloudflareAccess? access = null) => ollama.Models(address, token, access);
     public Task<string[]> GeminiModels(string server, string keyFile, CancellationToken token) => gemini.Models(server, keyFile, token);
     public void Dispose() { ollama.Dispose(); gemini.Dispose(); }
+    public async Task<DialogueTranslation> TranslateWithTone(string text, string from, string to, CancellationToken token, TranslationOptions options, string speaker = "")
+    {
+        if (from == to) return new(text, await AnalyzeTone(text, from, speaker, options, token));
+        return options.Engine switch
+        {
+            "ollama" => await ollama.TranslateWithTone(text, from, to, speaker, options, token),
+            "gemini" => await gemini.TranslateWithTone(text, from, to, speaker, options, token),
+            _ => throw new InvalidOperationException("語氣分析需要選擇 Ollama 或 Gemini。")
+        };
+    }
+    public Task<string> AnalyzeTone(string text, string language, string speaker, TranslationOptions options, CancellationToken token) => options.Engine switch
+    {
+        "ollama" => ollama.AnalyzeTone(text, language, speaker, options, token),
+        "gemini" => gemini.AnalyzeTone(text, language, speaker, options, token),
+        _ => throw new InvalidOperationException("語氣分析需要選擇 Ollama 或 Gemini。")
+    };
     public async Task<string> Translate(string text, string from, string to, CancellationToken token, TranslationOptions? options = null, string speaker = "")
     {
         if (from == to) return text;
@@ -95,8 +111,8 @@ public sealed partial class SpeechClient : IDisposable
         // A learned voice is an immutable first take for this identity/seed/direction. Keeping
         // its cache identity stable lets the first sentence and prepared jobs remain reusable.
         var key = System.Text.Json.JsonSerializer.Serialize(new { schema = "voxcpm2-v4-first-voice", server, text, identity = voice.EffectiveVoiceIdentity,
-            seed = voice.EffectiveSeed, mode = voice.IsFallback ? "learned-first" : "clone", referenceHash,
-            voice.Language, transcript = voice.IsFallback ? "" : voice.Transcript, voice.Control });
+            seed = voice.EffectiveSeed, mode = GroupSpeech.Applies(voice) ? GroupSpeech.CacheMode : voice.IsFallback ? "learned-first" : "clone", referenceHash,
+            voice.Language, transcript = voice.IsFallback ? "" : voice.Transcript, Control = voice.EffectiveControl });
         return Path.Combine(folder, Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key))) + ".wav");
     }
     public static bool IsCached(string path)
@@ -128,14 +144,20 @@ public sealed partial class SpeechClient : IDisposable
                 return await File.ReadAllBytesAsync(cache, token);
             }
         }
-        using var response = await client.PostAsJsonAsync(endpoint, new
+        byte[] wav;
+        if (GroupSpeech.Applies(voice))
+            wav = await GroupSpeech.Render(voice, member => Generate(server, text, member, token, version, background: background), token);
+        else
         {
-            text, language = voice.Language, reference_audio = reference,
-            transcript, control = voice.Control, seed = voice.EffectiveSeed, session_id = SessionId, revision = version, priority = background ? "background" : "interactive"
-        }, token);
-        if (response.StatusCode == System.Net.HttpStatusCode.Conflict) throw new OperationCanceledException("Dialogue superseded.", token);
-        if (!response.IsSuccessStatusCode) throw new InvalidOperationException(await response.Content.ReadAsStringAsync(token));
-        var wav = await response.Content.ReadAsByteArrayAsync(token);
+            using var response = await client.PostAsJsonAsync(endpoint, new
+            {
+                text, language = voice.Language, reference_audio = reference,
+                transcript, control = voice.EffectiveControl, seed = voice.EffectiveSeed, session_id = SessionId, revision = version, priority = background ? "background" : "interactive"
+            }, token);
+            if (response.StatusCode == System.Net.HttpStatusCode.Conflict) throw new OperationCanceledException("Dialogue superseded.", token);
+            if (!response.IsSuccessStatusCode) throw new InvalidOperationException(await response.Content.ReadAsStringAsync(token));
+            wav = await response.Content.ReadAsByteArrayAsync(token);
+        }
         if (wav.Length <= 44 || Encoding.ASCII.GetString(wav, 0, 4) != "RIFF" || Encoding.ASCII.GetString(wav, 8, 4) != "WAVE") throw new InvalidDataException("VoxCPM 未回傳有效 WAV。");
         token.ThrowIfCancellationRequested();
         if (cache is not null)
@@ -155,6 +177,7 @@ public sealed class GameReader : IDisposable
 {
     private readonly SharlayanGameMemoryGateway gateway = new(new HeuristicDirectDialogReader(), new ReaderLogger());
     private Process? process;
+    public string DialogueSurface => gateway.DialogueSurface.ToString();
     public void Attach(string language)
     {
         process = Process.GetProcessesByName("ffxiv_dx11").FirstOrDefault()

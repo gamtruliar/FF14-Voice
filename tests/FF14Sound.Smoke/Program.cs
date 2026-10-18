@@ -12,6 +12,7 @@ internal static class Program
     private static void Main(string[] args)
     {
         Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+        if (args.Length == 2 && args[0] == "--group-live") { GroupSpeechChecks.Live(args[1]).GetAwaiter().GetResult(); return; }
         if (args.Length == 1 && args[0] == "--tempo-check") { TempoChecks.Run(); return; }
         if (args.Length == 1 && args[0] == "--tempo-device") { TempoChecks.Playback().GetAwaiter().GetResult(); return; }
         if (args.Length == 3 && args[0] == "--tempo-review") { TempoChecks.Export(args[1], args[2]); return; }
@@ -43,6 +44,7 @@ internal static class Program
         app.InitializeComponent();
         var testSettingsPath = Path.Combine(Path.GetTempPath(), "ff14sound-ui-settings-" + Guid.NewGuid().ToString("N") + ".json");
         var window = new MainWindow(testSettingsPath);
+        if (window.FindName("RestartBackend") is not Button { IsEnabled: true }) throw new Exception("Backend restart button missing");
         ((ComboBox)window.FindName("SourceLanguage")).SelectedValue = "ja";
         ((ComboBox)window.FindName("TargetLanguage")).SelectedValue = "yue";
         var baseMode = (ComboBox)window.FindName("TranslationBaseMode");
@@ -70,6 +72,7 @@ internal static class Program
         ((Expander)window.FindName("VolumeRange")).IsExpanded = true;
         var speaker = (TextBox)window.FindName("Speaker");
         var currentVoice = (TextBlock)window.FindName("CurrentVoice");
+        DialogueToneChecks.Ui(window);
         var nativeCatalog = GameVoiceLibrary.FindCatalog();
         if (nativeCatalog.Length > 0)
         {

@@ -15,6 +15,14 @@ public sealed partial class SpeechClient
         CancellationToken token, int version, string cacheFolder)
     {
         var watch = Stopwatch.StartNew();
+        if (GroupSpeech.Applies(voice))
+        {
+            // Finish all voices before playback so a failed/cancelled part never leaves a partial chorus.
+            var hit = IsCached(await CachePath(server, text, voice, cacheFolder, token));
+            var mixed = await Generate(server, text, voice, token, version, cacheFolder);
+            await DeliverWave(mixed, onAudio, token);
+            return new(hit, false, watch.Elapsed.TotalSeconds, 1);
+        }
         using var cacheLease = SpeechCache.Lease(cacheFolder);
         using var voiceLock = await SpeechCache.LockVoice(cacheFolder, voice, token);
         var cache = await CachePath(server, text, voice, cacheFolder, token);
@@ -37,7 +45,7 @@ public sealed partial class SpeechClient
         using var request = new HttpRequestMessage(HttpMethod.Post, Endpoint(server, "/api/tts/stream"))
         {
             Content = JsonContent.Create(new { text, language = voice.Language, reference_audio = reference,
-                transcript = voice.IsFallback ? "" : voice.Transcript, control = voice.Control, seed = voice.EffectiveSeed,
+                transcript = voice.IsFallback ? "" : voice.Transcript, control = voice.EffectiveControl, seed = voice.EffectiveSeed,
                 session_id = SessionId, revision = version, priority = "interactive" })
         };
         using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
