@@ -51,4 +51,4 @@ var catalog = await CatalogBuilder.Build(args[0], args[1], args[2], progress, Ca
 catalog = VoiceNameMatcher.Build(args[0], Path.Combine(args[2], "catalog.json"));
 NativeDialogue.Build(Path.Combine(args[2], "catalog.json"), args[1]);
 Console.WriteLine($"Ready: {catalog.Voices.Length} speakers; {catalog.Voices.Sum(v => v.References.Length)} references; {catalog.Errors.Length} errors.");
-return 0;
+return catalog.Errors.Length == 0 ? 0 : 2;
