@@ -19,10 +19,11 @@ public sealed record SpeechSelection(string Text, string Language, bool Original
 
 public static class SpeechWorkflow
 {
-    public static async Task Run(Func<Task> translate, Func<Task>? speak, bool original, bool nativeAudio = false)
+    public static async Task Run(Func<Task> translate, Func<Task>? speak, bool original, bool nativeAudio = false, Func<bool>? canSpeak = null)
     {
         if (nativeAudio || speak is null) { await translate(); return; }
-        if (original) await Task.WhenAll(translate(), speak());
-        else { await translate(); await speak(); }
+        Task SpeakIfCurrent() => canSpeak?.Invoke() == false ? Task.CompletedTask : speak();
+        if (original) await Task.WhenAll(translate(), SpeakIfCurrent());
+        else { await translate(); await SpeakIfCurrent(); }
     }
 }

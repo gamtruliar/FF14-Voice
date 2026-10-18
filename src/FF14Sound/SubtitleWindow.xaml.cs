@@ -8,11 +8,13 @@ public partial class SubtitleWindow : Window
 {
     private readonly SubtitleSettings options;
     private readonly Action changed;
+    private readonly Func<string, Task<string>>? play;
+    private int playbackRequest;
     private bool ready;
     private string speaker = "", original = "", translated = "";
-    public SubtitleWindow(SubtitleSettings options, Action changed)
+    public SubtitleWindow(SubtitleSettings options, Action changed, Func<string, Task<string>>? play = null)
     {
-        InitializeComponent(); this.options = options; this.changed = changed;
+        InitializeComponent(); this.options = options; this.changed = changed; this.play = play;
         var area = new Rect(SystemParameters.VirtualScreenLeft, SystemParameters.VirtualScreenTop, SystemParameters.VirtualScreenWidth, SystemParameters.VirtualScreenHeight);
         var bounds = Place(options, options.Left is null || options.Top is null ? SystemParameters.WorkArea : area);
         Width = bounds.Width; Height = bounds.Height; Left = bounds.Left; Top = bounds.Top;
@@ -32,7 +34,22 @@ public partial class SubtitleWindow : Window
     }
     public void ShowDialogue(string name, string source, string translation)
     {
+        if (speaker != name || original != source)
+        { playbackRequest++; PlaybackStatus.Text = ""; }
         speaker = name; original = source; translated = translation; RefreshText();
+    }
+    private async void Play_Click(object sender, RoutedEventArgs e)
+    {
+        var mode = ((System.Windows.Controls.Button)sender).Tag?.ToString() ?? "translated";
+        if (play is null || string.IsNullOrWhiteSpace(mode == "original" ? original : translated)) return;
+        var request = ++playbackRequest;
+        PlaybackStatus.Text = "準備配音…";
+        try
+        {
+            var status = await play(mode);
+            if (request == playbackRequest) PlaybackStatus.Text = status;
+        }
+        catch (Exception ex) { if (request == playbackRequest) PlaybackStatus.Text = ex.Message; }
     }
     private void RefreshText()
     {
@@ -42,6 +59,8 @@ public partial class SubtitleWindow : Window
         TranslatedText.Visibility = options.ContentMode == "original" ? Visibility.Collapsed : Visibility.Visible;
         OriginalText.FontSize = options.ContentMode == "original" ? options.FontSize : Math.Max(16, options.FontSize * 0.72);
         TranslatedText.FontSize = options.FontSize;
+        PlayOriginal.IsEnabled = play is not null && !string.IsNullOrWhiteSpace(original);
+        PlayTranslated.IsEnabled = play is not null && !string.IsNullOrWhiteSpace(translated);
     }
     private void ApplyAppearance()
     {

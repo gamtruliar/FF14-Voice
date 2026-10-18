@@ -82,6 +82,7 @@ internal static class Program
                     if (!((TextBlock)window.FindName("Status")).Text.Contains("交由 GAME")) throw new Exception("Native audio status missing");
                 }
                 ((ComboBox)window.FindName("SpeechMode")).SelectedValue = "original";
+                SubtitlePlaybackChecks.Run(window);
                 ((TextBox)window.FindName("Original")).Clear();
             }
         }
@@ -198,19 +199,47 @@ internal static class Program
         var tableEncoder = new PngBitmapEncoder(); tableEncoder.Frames.Add(BitmapFrame.Create(tableImage));
         using (var stream = File.Create(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(output))!, "npc-table.png"))) tableEncoder.Save(stream);
         tableWindow.Close();
-        var subtitleOptions = new SubtitleSettings { ContentMode = "both" };
+        var subtitleOptions = new SubtitleSettings { ContentMode = "both", Compact = true };
         var subtitleChanges = 0;
-        var subtitle = new SubtitleWindow(subtitleOptions, () => subtitleChanges++);
+        var subtitleModes = new List<string>();
+        Task<string> subtitleResult = Task.FromResult("配音完成");
+        var subtitle = new SubtitleWindow(subtitleOptions, () => subtitleChanges++, mode =>
+        { subtitleModes.Add(mode); return subtitleResult; });
         subtitle.ShowDialogue("コランティオ", "こんにちは。旅の準備はできましたか？", "你好呀，準備好出發未？");
+        var playOriginal = (Button)subtitle.FindName("PlayOriginal");
+        var playTranslated = (Button)subtitle.FindName("PlayTranslated");
+        playOriginal.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        playTranslated.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        if (!subtitleModes.SequenceEqual(new[] { "original", "translated" }) ||
+            ((TextBlock)subtitle.FindName("PlaybackStatus")).Text != "配音完成")
+            throw new Exception("Subtitle playback buttons did not route their explicit speech modes");
         ((Slider)subtitle.FindName("TextSize")).Value = 32;
         if (subtitleChanges == 0 || subtitleOptions.FontSize != 32) throw new Exception("Subtitle controls do not persist appearance");
         subtitle.ShowDialogue("另一個 NPC", "次の台詞", "");
         if (((TextBlock)subtitle.FindName("TranslatedText")).Text.Length != 0) throw new Exception("Subtitle retained previous translation");
+        if (!playOriginal.IsEnabled || playTranslated.IsEnabled || ((TextBlock)subtitle.FindName("PlaybackStatus")).Text.Length != 0)
+            throw new Exception("Subtitle retained stale playback availability/status");
+        subtitle.ShowDialogue("", "", "");
+        playOriginal.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        playTranslated.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        if (playOriginal.IsEnabled || playTranslated.IsEnabled || subtitleModes.Count != 2)
+            throw new Exception("Cleared subtitle allowed playback of an old line");
         subtitle.ShowDialogue("コランティオ", "こんにちは。旅の準備はできましたか？", "你好呀，準備好出發未？");
+        var pendingSubtitlePlayback = new TaskCompletionSource<string>();
+        subtitleResult = pendingSubtitlePlayback.Task;
+        playOriginal.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        subtitle.ShowDialogue("コランティオ", "こんにちは。旅の準備はできましたか？", "你好呀！準備好出發未？");
+        pendingSubtitlePlayback.SetResult("原文配音完成");
+        if (((TextBlock)subtitle.FindName("PlaybackStatus")).Text != "原文配音完成")
+            throw new Exception("Arriving translation invalidated the current original playback status");
         var subtitleRoot = (FrameworkElement)subtitle.Content; subtitle.Content = null;
         var subtitleCanvas = new Border { Background = new SolidColorBrush(Color.FromRgb(38, 48, 63)), Child = subtitleRoot };
         TextElement.SetFontFamily(subtitleCanvas, subtitle.FontFamily); TextElement.SetFontSize(subtitleCanvas, 14); TextElement.SetForeground(subtitleCanvas, Brushes.White);
         subtitleCanvas.Measure(new Size(960, 230)); subtitleCanvas.Arrange(new Rect(0, 0, 960, 230)); subtitleCanvas.UpdateLayout();
+        if (playOriginal.ActualWidth <= 0 || playOriginal.ActualHeight <= 0 ||
+            playTranslated.ActualWidth <= 0 || playTranslated.ActualHeight <= 0 ||
+            ((FrameworkElement)subtitle.FindName("Toolbar")).Visibility != Visibility.Collapsed)
+            throw new Exception("Subtitle playback buttons unavailable in compact mode");
         var subtitleImage = new RenderTargetBitmap(960, 230, 96, 96, PixelFormats.Pbgra32); subtitleImage.Render(subtitleCanvas);
         var subtitleEncoder = new PngBitmapEncoder(); subtitleEncoder.Frames.Add(BitmapFrame.Create(subtitleImage));
         using (var stream = File.Create(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(output))!, "subtitle-window.png"))) subtitleEncoder.Save(stream);

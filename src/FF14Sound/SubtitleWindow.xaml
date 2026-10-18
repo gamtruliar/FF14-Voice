@@ -13,10 +13,18 @@
      <Button Content="精簡" Click="Compact_Click" Margin="5,0" Padding="6,2" Foreground="Black"/>
      <Button Content="×" Click="Close_Click" Margin="0" Padding="8,2" Foreground="Black" ToolTip="關閉字幕視窗"/>
    </WrapPanel>
+   <Grid DockPanel.Dock="Top" Margin="0,0,0,5">
+    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <TextBlock x:Name="SpeakerText" Grid.Column="0" FontSize="17" Foreground="#F0D493" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" MouseLeftButtonDown="Drag_MouseDown" Background="Transparent"/>
+    <TextBlock x:Name="PlaybackStatus" Grid.Column="1" FontSize="11" Foreground="#BBC9DB" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="8,0" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+    <StackPanel Grid.Column="2" Orientation="Horizontal">
+     <Button x:Name="PlayOriginal" Content="▶ 播放原文" Tag="original" Click="Play_Click" FontSize="12" Padding="8,2" Margin="0,0,6,0" Foreground="Black" ToolTip="用原文語言配音目前呢句"/>
+     <Button x:Name="PlayTranslated" Content="▶ 播放譯文" Tag="translated" Click="Play_Click" FontSize="12" Padding="8,2" Foreground="Black" ToolTip="用翻譯目標語言配音目前譯文"/>
+    </StackPanel>
+   </Grid>
    <TextBlock x:Name="CompactHint" DockPanel.Dock="Bottom" Text="雙擊字幕顯示控制列 · 拖動文字可移動 · 右下角可調大小" FontSize="10" Foreground="#8898AE" HorizontalAlignment="Right" Margin="0,3,0,0"/>
    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <StackPanel MouseLeftButtonDown="Drag_MouseDown" Background="Transparent">
-     <TextBlock x:Name="SpeakerText" FontSize="17" Foreground="#F0D493" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,5"/>
      <TextBlock x:Name="OriginalText" Foreground="#BBC9DB" TextWrapping="Wrap" Margin="0,0,0,6"/>
      <TextBlock x:Name="TranslatedText" Foreground="White" TextWrapping="Wrap" FontWeight="SemiBold"/>
     </StackPanel>

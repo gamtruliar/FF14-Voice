@@ -33,10 +33,12 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<string> history = [];
     private GameReader? game;
     private CancellationTokenSource? operation;
+    private CancellationTokenSource? speechOperation;
     private string lastLine = "";
     private bool reading;
     private bool closing;
     private int generation;
+    private int speechGeneration;
     private record LanguageOption(string Code, string Label);
 
     public MainWindow() : this(null) { }
@@ -141,8 +143,25 @@ public partial class MainWindow : Window
     }
     private void Cancel()
     {
-        generation++; operation?.Cancel(); operation?.Dispose(); operation = null; StopPlayback();
-        _ = speech.CancelPending(Server.Text.Trim(), generation);
+        generation++; operation?.Cancel(); operation?.Dispose(); operation = null;
+        CancelSpeech();
+    }
+    private void CancelSpeech()
+    {
+        speechGeneration++; speechOperation?.Cancel(); speechOperation?.Dispose(); speechOperation = null;
+        StopPlayback();
+        _ = speech.CancelPending(Server.Text.Trim(), speechGeneration);
+    }
+    private async Task RunSpeech(Func<CancellationToken, int, Task> action)
+    {
+        // Switching/replaying audio must leave this line's translation running.
+        CancelSpeech();
+        speechOperation = new();
+        var token = speechOperation.Token;
+        var version = speechGeneration;
+        try { await action(token, version); }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { if (version == speechGeneration) Status.Text = ex.Message; }
     }
     private async Task Run(Func<CancellationToken, int, Task> action)
     {
@@ -189,12 +208,14 @@ public partial class MainWindow : Window
     private const string NativeAudioStatus = "已有遊戲原錄音 · 交由 GAME 播放；本程式不生成／不播放此句";
     private bool CurrentHasNativeAudio() => library.HasNativeAudio(Speaker.Text.Trim(), Original.Text,
         SourceLanguage.SelectedValue?.ToString() ?? "en");
-    private async Task SpeakCurrent(CancellationToken token, int version)
+    private Task SpeakCurrent(CancellationToken token, int version) =>
+        SpeakSelected(SpeechMode.SelectedValue?.ToString() ?? "translated", token, version);
+    private async Task SpeakSelected(string mode, CancellationToken token, int version)
     {
         // Before selection, cache lookup and playback, including manual and translated dubbing.
         if (CurrentHasNativeAudio()) { Status.Text = NativeAudioStatus; return; }
         var name = Speaker.Text.Trim();
-        var selection = SpeechSelection.Choose(SpeechMode.SelectedValue?.ToString() ?? "translated", Original.Text, Translated.Text,
+        var selection = SpeechSelection.Choose(mode, Original.Text, Translated.Text,
             SourceLanguage.SelectedValue?.ToString() ?? "en", TargetLanguage.SelectedValue?.ToString() ?? "zh-TW");
         ObserveNpc();
         settings.DefaultVoiceDescription = DefaultDescription.Text.Trim();
@@ -214,12 +235,12 @@ public partial class MainWindow : Window
                 var result = await speech.Stream(Server.Text.Trim(), text, voice, async pcm =>
                 {
                     token.ThrowIfCancellationRequested();
-                    if (version != generation || CurrentHasNativeAudio()) throw new OperationCanceledException(token);
+                    if (version != speechGeneration || CurrentHasNativeAudio()) throw new OperationCanceledException(token);
                     await playback.Add(pcm, token);
                     if (first) { first = false; Status.Text = $"正在播放：{name} · 首段 {started.Elapsed.TotalSeconds:F2}s"; }
                 }, token, version, SpeechClient.CacheFolder(settings));
                 await playback.Finish(token);
-                if (version == generation) { RefreshVoiceMapping(); Status.Text = $"配音完成 · {(result.CacheHit ? "快取" : result.Streamed ? "串流" : "完整音檔（backend 未支援串流）")} · 首段 {result.FirstAudioSeconds:F2}s"; }
+                if (version == speechGeneration) { RefreshVoiceMapping(); Status.Text = $"配音完成 · {(result.CacheHit ? "快取" : result.Streamed ? "串流" : "完整音檔（backend 未支援串流）")} · 首段 {result.FirstAudioSeconds:F2}s"; }
             }
             finally { if (ReferenceEquals(streamingPlayer, playback)) streamingPlayer = null; }
             return;
@@ -228,7 +249,7 @@ public partial class MainWindow : Window
         var watch = Stopwatch.StartNew();
         var wav = await speech.Generate(Server.Text.Trim(), text, voice, token, version, SpeechClient.CacheFolder(settings));
         token.ThrowIfCancellationRequested();
-        if (version != generation) return;
+        if (version != speechGeneration) return;
         if (CurrentHasNativeAudio()) { Status.Text = NativeAudioStatus; return; }
         using var completePlayback = new StreamingPcmPlayer { Gain = (float)(SpeechVolume.Value / 100), Levels = CurrentPlaybackLevels(), Speed = SpeechSpeed.Value };
         streamingPlayer = completePlayback;
@@ -237,7 +258,7 @@ public partial class MainWindow : Window
             Status.Text = $"正在播放：{name} · {voiceLabel} · 生成 / 快取 {watch.Elapsed.TotalSeconds:F1}s";
             await SpeechClient.DeliverWave(wav, pcm => completePlayback.Add(pcm, token), token);
             await completePlayback.Finish(token);
-            if (version == generation) { RefreshVoiceMapping(); Status.Text = "配音完成"; }
+            if (version == speechGeneration) { RefreshVoiceMapping(); Status.Text = "配音完成"; }
         }
         finally { if (ReferenceEquals(streamingPlayer, completePlayback)) streamingPlayer = null; }
     }
@@ -328,11 +349,21 @@ public partial class MainWindow : Window
         finally { if (!closing) RefreshModels.IsEnabled = TranslationEngine.SelectedValue?.ToString() != "google"; }
     }
     private async void Translate_Click(object sender, RoutedEventArgs e) => await Run(TranslateCurrent);
-    private async void Speak_Click(object sender, RoutedEventArgs e) => await Run(SpeakCurrent);
+    private async void Speak_Click(object sender, RoutedEventArgs e) => await RunSpeech(SpeakCurrent);
     private async void TranslateSpeak_Click(object sender, RoutedEventArgs e) => await Run((t, v) => ProcessDialogue(t, v, true));
-    private Task ProcessDialogue(CancellationToken token, int version, bool speak) => SpeechWorkflow.Run(
-        () => TranslateCurrent(token, version), speak ? () => SpeakCurrent(token, version) : null,
-        SpeechMode.SelectedValue?.ToString() == "original", library.NativeAudio is not null && CurrentHasNativeAudio());
+    private Task ProcessDialogue(CancellationToken token, int version, bool speak)
+    {
+        var mode = SpeechMode.SelectedValue?.ToString() ?? "translated";
+        var expectedSpeech = speechGeneration;
+        var source = Original.Text;
+        var name = Speaker.Text;
+        return SpeechWorkflow.Run(
+            () => TranslateCurrent(token, version), speak ? () => RunSpeech((t, v) => SpeakSelected(mode, t, v)) : null,
+            mode == "original", library.NativeAudio is not null && CurrentHasNativeAudio(),
+            // A manual playback choice supersedes queued auto speech, not the subtitle translation.
+            () => !token.IsCancellationRequested && version == generation && expectedSpeech == speechGeneration &&
+                source == Original.Text && name == Speaker.Text);
+    }
     private void Stop_Click(object sender, RoutedEventArgs e) { Cancel(); Status.Text = "已停止 / 略過今句配音"; }
     private void Topmost_Checked(object sender, RoutedEventArgs e) { Topmost = true; QueueSettingsSave(); }
     private void Topmost_Unchecked(object sender, RoutedEventArgs e) { Topmost = false; QueueSettingsSave(); }
@@ -611,11 +642,17 @@ public partial class MainWindow : Window
         catch (Exception ex) { SettingsStatus.Text = "設定儲存失敗：" + ex.Message; }
     }
     private void Subtitles_Click(object sender, RoutedEventArgs e) => OpenSubtitles();
+    private async Task<string> PlaySubtitle(string mode)
+    {
+        if (subtitlesCleared || closing) return "目前冇對白";
+        await RunSpeech((token, version) => SpeakSelected(mode, token, version));
+        return Status.Text;
+    }
     private void OpenSubtitles()
     {
         if (subtitles is not null) { if (subtitles.WindowState == WindowState.Minimized) subtitles.WindowState = WindowState.Normal; return; }
         settings.Subtitles.Enabled = true;
-        subtitles = new SubtitleWindow(settings.Subtitles, QueueSettingsSave);
+        subtitles = new SubtitleWindow(settings.Subtitles, QueueSettingsSave, PlaySubtitle);
         subtitles.Closed += (_, _) =>
         {
             subtitles = null;

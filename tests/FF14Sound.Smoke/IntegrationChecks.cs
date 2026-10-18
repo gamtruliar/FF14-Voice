@@ -56,6 +56,16 @@ internal static class IntegrationChecks
         try { await SpeechWorkflow.Run(() => Task.FromException(new IOException("translation unavailable")), () => { speechStarted = true; return Task.CompletedTask; }, false); }
         catch (IOException) { }
         Check(!speechStarted, "Translated mode never speaks stale text after a translation failure");
+        var pendingTranslation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var translatedAfterManualPlay = false;
+        var playbackVersion = 1;
+        var queuedVersion = playbackVersion;
+        var queuedSpeech = SpeechWorkflow.Run(async () => { await pendingTranslation.Task; translatedAfterManualPlay = true; },
+            () => { speechStarted = true; return Task.CompletedTask; }, false,
+            canSpeak: () => playbackVersion == queuedVersion);
+        playbackVersion++; // User chooses original audio while the translation is still pending.
+        pendingTranslation.SetResult(); await queuedSpeech;
+        Check(translatedAfterManualPlay && !speechStarted, "Manual playback keeps translation but supersedes queued auto speech");
         var placement = SubtitleWindow.Place(restored.Subtitles, new System.Windows.Rect(0, 0, 1920, 1080));
         Check(placement.Left >= 0 && placement.Right <= 1920 && placement.Bottom <= 1080, "Restore subtitles onto current screen after a monitor is removed");
         var reference = Path.Combine(folder, "ref.wav");
