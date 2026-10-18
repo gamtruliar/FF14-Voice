@@ -1,4 +1,12 @@
 using FF14Sound.Voices;
+if (args.Length == 4 && args[0] == "--traditional-dialogue")
+{
+    var report = TraditionalDialogue.Build(args[1], args[2], args[3], new Progress<string>(Console.WriteLine));
+    Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(report.StatusCounts));
+    Console.WriteLine($"Paired {report.Rows} Japanese rows; {report.Errors.Length} errors.");
+    return report.Errors.Length == 0 ? 0 : 2;
+}
+if (args.Length == 2 && args[0] == "--inspect-languages") { Inspect.Languages(args[1]); return 0; }
 if (args.Length == 3 && args[0] == "--native-index")
 {
     var index = NativeDialogue.Build(args[1], args[2]);

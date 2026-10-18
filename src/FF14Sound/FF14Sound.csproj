@@ -10,6 +10,7 @@
   <ItemGroup>
     <None Include="../../Licenses/SoundTouch.Net.txt" Link="Licenses/SoundTouch.Net.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Include="../../Licenses/SoundTouch.Net-NOTICE.txt" Link="Licenses/SoundTouch.Net-NOTICE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../data/dialogue-ja-tc.jsonl" Condition="Exists('../../data/dialogue-ja-tc.jsonl')" Link="data/dialogue-ja-tc.jsonl" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../data/translation-glossary*.json" Link="Glossary/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <PackageReference Include="SoundTouch.Net" Version="2.3.2" />
     <ProjectReference Include="../FF14Sound.Voices/FF14Sound.Voices.csproj" />

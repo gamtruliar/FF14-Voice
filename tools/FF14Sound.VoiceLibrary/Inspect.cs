@@ -6,6 +6,24 @@ using FF14Sound.Voices;
 
 internal static class Inspect
 {
+    public static void Languages(string sqpack)
+    {
+        using var game = new GameData(sqpack);
+        Console.WriteLine("Languages: " + string.Join(", ", Enum.GetValues<Language>().Select(l => $"{(int)l}={l}")));
+        Console.WriteLine($"Sheets: {game.Excel.SheetNames.Count()}");
+        foreach (var name in new[] { "ENpcResident", "Quest", "NpcYell" })
+        foreach (var lang in Enum.GetValues<Language>())
+        {
+            try
+            {
+                var raw = game.Excel.GetRawSheet(name, lang);
+                var sheet = new ExcelSheet<RawRow>(raw);
+                Console.WriteLine($"{name} requested={lang} actual={raw.Language} columns={sheet.Columns.Count}: " +
+                    string.Join(" | ", sheet.Take(3).Select(r => r.RowId + ":" + r.ReadColumn(0)?.ToString())));
+            }
+            catch (Exception ex) { Console.WriteLine($"{name}/{lang}: {ex.Message}"); }
+        }
+    }
     public static void DialogueSchemas(string sqpack)
     {
         using var game = new GameData(sqpack);

@@ -21,6 +21,11 @@ internal static class Program
             PlaybackLevelChecks.Export(args[1], args[2]);
             return;
         }
+        if (args.Length == 3 && args[0] == "--tc-colloquial-live")
+        {
+            TraditionalDialogueChecks.Live(args[1], args[2]).GetAwaiter().GetResult();
+            return;
+        }
         IntegrationChecks.Run().GetAwaiter().GetResult();
         if (args.Contains("--learned-live"))
             SpeechCacheChecks.Live(Path.GetDirectoryName(Path.GetFullPath(args[0]))!).GetAwaiter().GetResult();
@@ -40,6 +45,9 @@ internal static class Program
         var window = new MainWindow(testSettingsPath);
         ((ComboBox)window.FindName("SourceLanguage")).SelectedValue = "ja";
         ((ComboBox)window.FindName("TargetLanguage")).SelectedValue = "yue";
+        var baseMode = (ComboBox)window.FindName("TranslationBaseMode");
+        if (baseMode.SelectedValue?.ToString() != "original") throw new Exception("Old settings must retain direct translation");
+        baseMode.SelectedValue = TranslationBase.OfficialTraditional;
         ((ComboBox)window.FindName("SpeechMode")).SelectedValue = "original";
         var streamOption = (CheckBox)window.FindName("StreamSpeech");
         if (streamOption.IsChecked != true) throw new Exception("Streaming must default on");
@@ -120,6 +128,7 @@ internal static class Program
         delay.Tick += (_, _) => { delay.Stop(); frame.Continue = false; }; delay.Start();
         System.Windows.Threading.Dispatcher.PushFrame(frame);
         var autosaved = Settings.Load(testSettingsPath);
+        if (autosaved.TranslationBaseMode != TranslationBase.OfficialTraditional) throw new Exception("Translation base mode was not autosaved");
         if (autosaved.StreamSpeech) throw new Exception("Streaming toggle was not autosaved");
         if (autosaved.SpeechVolumePercent != 200) throw new Exception("Playback volume was not autosaved");
         if (autosaved.SpeechSpeed != 1.25) throw new Exception("Playback speed was not autosaved");
@@ -130,6 +139,7 @@ internal static class Program
         var reopened = new MainWindow(testSettingsPath);
         if (((Slider)reopened.FindName("SpeechSpeed")).Value != 1.25) throw new Exception("Playback speed did not reload");
         if (((CheckBox)reopened.FindName("AutoVolume")).IsChecked != true || ((Slider)reopened.FindName("VolumePeak")).Value != -4) throw new Exception("Automatic volume settings did not reload");
+        if (((ComboBox)reopened.FindName("TranslationBaseMode")).SelectedValue?.ToString() != TranslationBase.OfficialTraditional) throw new Exception("Translation base mode did not reload");
         if (!((TextBlock)reopened.FindName("AccessStatus")).Text.Contains("有效至")) throw new Exception("Stored Cloudflare session did not reload");
         typeof(MainWindow).GetMethod("AccessClear_Click", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(reopened, new object[] { reopened, new RoutedEventArgs() });
         reopened.Close();

@@ -125,5 +125,8 @@ public sealed class TranslationGlossary
             "Do not add glossary entries absent from the dialogue or print the glossary. " +
             "Keep the requested spoken dialect in the surrounding sentences. Unlisted names must not be invented.\n" + lines);
     }
-    public static GlossaryContext Context(string text, string speaker, string from, string to) => Default.Value.Select(text, speaker, from, to);
+    // Official TC already supplies localized names; Cantonese conversion needs no glossary or overrides.
+    public static bool IsNeeded(string from, string to) => from != "zh-TW" || to != "yue";
+    public static GlossaryContext Context(string text, string speaker, string from, string to) =>
+        IsNeeded(from, to) ? Default.Value.Select(text, speaker, from, to) : new([], "");
 }

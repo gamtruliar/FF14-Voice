@@ -27,6 +27,7 @@ public sealed class Settings
     public string SourceLanguage { get; set; } = "en";
     public string TargetLanguage { get; set; } = "zh-TW";
     public string TranslationEngine { get; set; } = "ollama";
+    public string TranslationBaseMode { get; set; } = "original";
     public string OllamaUrl { get; set; } = "http://localhost:11434";
     public string OllamaModel { get; set; } = "qwen3.5:9b";
     public string OllamaBrowserSessionProtected { get; set; } = "";

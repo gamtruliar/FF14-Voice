@@ -58,6 +58,10 @@
       <StackPanel><TextBlock Text="配音內容"/><ComboBox x:Name="SpeechMode" Width="160" DisplayMemberPath="Label" SelectedValuePath="Code"/></StackPanel>
      </WrapPanel>
      <TextBlock x:Name="SettingsStatus" Text="設定會自動儲存" FontSize="12" Foreground="#53627C" Margin="0,0,0,8"/>
+     <TextBlock Text="翻譯來源模式"/>
+     <ComboBox x:Name="TranslationBaseMode" DisplayMemberPath="Label" SelectedValuePath="Code" ToolTip="日版保持原文來源。繁中模式按對白 ID 取官方繁中，再交畀所選引擎翻廣東話；配唔到時用返日文。"/>
+     <TextBlock x:Name="TranslationBaseStatus" TextWrapping="Wrap" FontSize="12" Foreground="#53627C" Margin="0,0,0,6"/>
+     <TextBox x:Name="TraditionalBaseText" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="80" VerticalScrollBarVisibility="Auto" Visibility="Collapsed" ToolTip="本句實際用作翻譯來源嘅官方繁中"/>
      <WrapPanel>
       <StackPanel><TextBlock Text="翻譯引擎"/><ComboBox x:Name="TranslationEngine" Width="150" DisplayMemberPath="Label" SelectedValuePath="Code"/></StackPanel>
       <StackPanel x:Name="OllamaModelPanel"><TextBlock Text="Ollama 模型"/><ComboBox x:Name="OllamaModel" Width="300" IsEditable="True" ToolTip="本機已有模型；翻譯效果及速度視乎模型。"/></StackPanel>

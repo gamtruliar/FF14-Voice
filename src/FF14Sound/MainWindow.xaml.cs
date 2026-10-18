@@ -50,6 +50,10 @@ public partial class MainWindow : Window
         try { settings = Settings.Load(settingsFile); }
         catch (Exception ex) { settings = new(); Status.Text = "設定讀取失敗：" + ex.Message; }
         translator = new();
+        TranslationBaseMode.ItemsSource = new[] { new LanguageOption("original", "原文直接翻譯"), new("official-tc", "日文 ID → 官方繁中 → 廣東話") };
+        TranslationBaseMode.SelectedValue = settings.TranslationBaseMode;
+        if (TranslationBaseMode.SelectedIndex < 0) TranslationBaseMode.SelectedValue = "original";
+        ClearTranslationBase();
         TranslationEngine.ItemsSource = new[] { new LanguageOption("ollama", "Ollama"), new("gemini", "Gemini · Google"), new("google", "Google Translate") };
         TranslationEngine.SelectedValue = settings.TranslationEngine;
         if (TranslationEngine.SelectedIndex < 0) TranslationEngine.SelectedValue = "ollama";
@@ -94,6 +98,9 @@ public partial class MainWindow : Window
         TargetLanguage.SelectionChanged += AudioSettingChanged;
         SourceLanguage.SelectionChanged += AudioSettingChanged;
         SpeechMode.SelectionChanged += AudioSettingChanged;
+        TranslationBaseMode.SelectionChanged += (_, _) => { Cancel(); ClearTranslationBase(); QueueSettingsSave(); };
+        SourceLanguage.SelectionChanged += (_, _) => ClearTranslationBase();
+        TargetLanguage.SelectionChanged += (_, _) => ClearTranslationBase();
         AutoSpeak.Checked += (_, _) => QueueSettingsSave();
         AutoSpeak.Unchecked += (_, _) => { Cancel(); QueueSettingsSave(); };
         StreamSpeech.Checked += (_, _) => { Cancel(); QueueSettingsSave(); };
@@ -120,9 +127,9 @@ public partial class MainWindow : Window
         VolumePeak.ValueChanged += (_, _) => UpdatePlaybackLevels();
         Server.TextChanged += (_, _) => QueueSettingsSave();
         DefaultDescription.TextChanged += (_, _) => { QueueSettingsSave(); RefreshVoiceMapping(); };
-        Original.TextChanged += (_, _) => { subtitlesCleared = false; UpdateSubtitles(); };
+        Original.TextChanged += (_, _) => { subtitlesCleared = false; ClearTranslationBase(); UpdateSubtitles(); };
         Translated.TextChanged += (_, _) => { subtitlesCleared = false; UpdateSubtitles(); };
-        Speaker.TextChanged += (_, _) => { subtitlesCleared = false; UpdateSubtitles(); RefreshVoiceMapping(); };
+        Speaker.TextChanged += (_, _) => { subtitlesCleared = false; ClearTranslationBase(); UpdateSubtitles(); RefreshVoiceMapping(); };
         saveTimer.Tick += (_, _) => { saveTimer.Stop(); TrySaveSettings(); };
         timer.Tick += Poll;
         player.MediaEnded += (_, _) => { StopPlayback(); Status.Text = "配音完成"; };
@@ -173,6 +180,14 @@ public partial class MainWindow : Window
         catch (OperationCanceledException) { }
         catch (Exception ex) { if (version == generation) Status.Text = ex.Message; }
     }
+    private void ClearTranslationBase()
+    {
+        TraditionalBaseText.Clear();
+        TraditionalBaseText.Visibility = Visibility.Collapsed;
+        TranslationBaseStatus.ToolTip = null;
+        TranslationBaseStatus.Text = TranslationBaseMode.SelectedValue?.ToString() == TranslationBase.OfficialTraditional
+            ? "日文對白配對官方繁中後翻廣東話；未配到時用返日文。" : "使用遊戲原文翻譯";
+    }
     private async Task TranslateCurrent(CancellationToken token, int version)
     {
         var text = Original.Text.Trim();
@@ -182,10 +197,26 @@ public partial class MainWindow : Window
         var options = engine == "gemini"
             ? new TranslationOptions(engine, Server.Text.Trim(), GeminiModel.Text.Trim(), GeminiKeyFile.Text.Trim())
             : new TranslationOptions(engine, OllamaUrl.Text.Trim(), OllamaModel.Text.Trim(), Access: CurrentOllamaAccess());
+        var from = SourceLanguage.SelectedValue?.ToString() ?? "en";
+        var to = TargetLanguage.SelectedValue?.ToString() ?? "zh-TW";
+        var speaker = Speaker.Text.Trim();
+        TranslationBaseStatus.Text = "準備翻譯來源…";
+        var input = await TranslationBase.ResolveAsync(TranslationBaseMode.SelectedValue?.ToString() ?? "original", text, from, to, speaker, token);
+        token.ThrowIfCancellationRequested();
+        if (version != generation || Original.Text.Trim() != text || Speaker.Text.Trim() != speaker) return;
+        TranslationBaseStatus.Text = input.Note;
+        TranslationBaseStatus.ToolTip = input.Match is { } match ? match.Source + $" · {match.CandidateCount} 筆一致配對" : input.Note;
+        TraditionalBaseText.Text = input.Match?.Text ?? "";
+        TraditionalBaseText.Visibility = input.Match is null ? Visibility.Collapsed : Visibility.Visible;
         var label = options.Engine switch { "ollama" => "Ollama · " + options.Model, "gemini" => "Gemini · " + options.Model, _ => "Google Translate" };
-        if (engine is "ollama" or "gemini")
+        if (engine is "ollama" or "gemini" && !TranslationGlossary.IsNeeded(input.Language, to))
         {
-            var glossary = TranslationGlossary.Context(text, Speaker.Text.Trim(), SourceLanguage.SelectedValue?.ToString() ?? "en", TargetLanguage.SelectedValue?.ToString() ?? "zh-TW");
+            label += " · 繁中原句（不附詞表）";
+            TranslationStatus.ToolTip = "沿用繁中原句嘅專有名詞，只改成廣東話口語；不附專有名詞表或自訂詞表。";
+        }
+        else if (engine is "ollama" or "gemini")
+        {
+            var glossary = TranslationGlossary.Context(input.Text, input.Speaker, input.Language, to);
             label += $" · FF14 詞表 {glossary.Matches.Length} 項";
             TranslationStatus.ToolTip = string.Join("\n", glossary.Matches.Select(m => m.Source + " → " + m.Target));
         }
@@ -194,10 +225,10 @@ public partial class MainWindow : Window
         Status.Text = "翻譯中…";
         var watch = Stopwatch.StartNew();
         string translated;
-        try { translated = await translator.Translate(text, SourceLanguage.SelectedValue?.ToString() ?? "en", TargetLanguage.SelectedValue?.ToString() ?? "zh-TW", token, options, Speaker.Text.Trim()); }
+        try { translated = await translator.Translate(input.Text, input.Language, to, token, options, input.Speaker); }
         catch (Exception ex) { if (version == generation) TranslationStatus.Text = label + " · " + (ex is OperationCanceledException ? "已取消" : ex.Message); throw; }
         token.ThrowIfCancellationRequested();
-        if (version != generation) return;
+        if (version != generation || Original.Text.Trim() != text || Speaker.Text.Trim() != speaker) return;
         Translated.Text = translated;
         TranslationStatus.Text = $"{label} · {watch.Elapsed.TotalSeconds:F2}s";
         history.Insert(0, $"{Speaker.Text}: {translated}");
@@ -501,6 +532,7 @@ public partial class MainWindow : Window
         settings.Server = Server.Text.Trim(); settings.SourceLanguage = SourceLanguage.SelectedValue?.ToString() ?? "en";
         settings.TargetLanguage = TargetLanguage.SelectedValue?.ToString() ?? "zh-TW";
         settings.TranslationEngine = TranslationEngine.SelectedValue?.ToString() ?? "ollama";
+        settings.TranslationBaseMode = TranslationBaseMode.SelectedValue?.ToString() ?? "original";
         settings.OllamaUrl = OllamaUrl.Text.Trim();
         settings.OllamaModel = OllamaModel.Text.Trim();
         settings.OllamaBrowserSessionProtected = accessSession?.Protect() ?? "";
