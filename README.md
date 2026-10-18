@@ -12,16 +12,15 @@ FF14 Voice 係一個獨立 Windows app，為《FINAL FANTASY XIV》對白加入�
 
 實際遊戲中嘅對白翻譯、字幕同角色配音示範。**影片包含遊戲劇情。**
 
-| | |
-| --- | --- |
-| [![示範 ctl](docs/images/ctl.jpg)](vdo/ctl.mp4) | [![示範 mm1](docs/images/mm1.jpg)](vdo/mm1.mp4) |
-| [開啟／下載 ctl.mp4](vdo/ctl.mp4) | [開啟／下載 mm1.mp4](vdo/mm1.mp4) |
-| [![示範 npc](docs/images/npc.jpg)](vdo/npc.mp4) | [![示範 tataru](docs/images/tataru.jpg)](vdo/tataru.mp4) |
-| [開啟／下載 npc.mp4](vdo/npc.mp4) | [開啟／下載 tataru.mp4](vdo/tataru.mp4) |
+https://github.com/user-attachments/assets/4843614d-fe3e-49f8-8675-1080ceda593b
 
-[![示範 Timeline 1](docs/images/timeline-1.jpg)](vdo/timeline-1.mp4)
+https://github.com/user-attachments/assets/05050371-2f7d-4312-b1a3-cb1c1279a228
 
-[開啟／下載 timeline-1.mp4](vdo/timeline-1.mp4)
+https://github.com/user-attachments/assets/172fbe7e-f464-4ff5-82e9-0c1cfa5b0d96
+
+https://github.com/user-attachments/assets/ac9007ee-4ff7-4e33-ba47-57d7c616e8ec
+
+https://github.com/user-attachments/assets/1ce9aebe-65db-4dab-b8ca-cb4507443e47
 
 ## 有咩功能？
 
