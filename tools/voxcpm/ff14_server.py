@@ -118,7 +118,7 @@ def create_app(demo):
     @api.post("/api/tts/stream")
     async def speech_stream(request: SpeechRequest):
         if not hasattr(demo, "stream_tts_audio"):
-            raise HTTPException(501, "Streaming requires the Omni backend.")
+            raise HTTPException(501, "Streaming requires an Omni or GGUF backend.")
         reference = Path(request.reference_audio) if request.reference_audio else None
         try:
             if reference is not None and (not reference.is_file() or reference.suffix.lower() not in {".wav", ".flac", ".mp3", ".ogg"}):
@@ -188,9 +188,14 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=8808)
     parser.add_argument("--model-id", default="openbmb/VoxCPM2")
     parser.add_argument("--device", default="auto")
-    parser.add_argument("--omni-url", default="", help="Local WSL2 vLLM-Omni endpoint, e.g. http://127.0.0.1:8809")
+    backends = parser.add_mutually_exclusive_group()
+    backends.add_argument("--omni-url", default="", help="Local WSL2 vLLM-Omni endpoint, e.g. http://127.0.0.1:8809")
+    backends.add_argument("--gguf-url", default="", help="Local llama.cpp-omni VoxCPM2 TTS endpoint")
     args = parser.parse_args()
-    if args.omni_url:
+    if args.gguf_url:
+        from gguf_backend import GGUFDemo
+        demo = GGUFDemo(args.gguf_url)
+    elif args.omni_url:
         from omni_backend import OmniDemo
         demo = OmniDemo(args.omni_url)
     else:
