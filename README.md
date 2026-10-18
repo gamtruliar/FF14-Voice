@@ -68,9 +68,19 @@ git submodule update --init --recursive
 
 ```powershell
 .\Setup-VoxCPM.cmd
-# 冇 CUDA GPU 可以改用：
-# .\Setup-VoxCPM.cmd -CpuOnly
 ```
+
+安裝器會按 NVIDIA 驅動同顯卡選擇相容版本；偵測唔到 NVIDIA 時使用 CPU。唔需要自行安裝 CUDA Toolkit。安裝完成會檢查配音環境能否執行。
+
+想先檢查、指定版本，或者只用 CPU：
+
+```powershell
+.\Setup-VoxCPM.cmd -CheckOnly
+.\Setup-VoxCPM.cmd -TorchBackend cu126
+.\Setup-VoxCPM.cmd -CpuOnly
+```
+
+支援 `cu126`、`cu128`、`cu130` 同 `cpu`。AMD／Intel 顯卡目前用 CPU 模式；舊驅動、RTX 50 系列、Python 版本同安裝失敗嘅處理方法，見 [安裝與排錯](docs/setup.md)。
 
 第一次生成／預載時會下載 VoxCPM2 模型，請保持網絡連線並等候完成。
 
@@ -102,8 +112,7 @@ Steam 預設位置係 `C:\Program Files (x86)\Steam\steamapps\common\FINAL FANTA
 
 ```powershell
 # Terminal 1：保持運行
-.\Start-VoxCPM.cmd --device cuda
-# CPU：.\Start-VoxCPM.cmd --device cpu
+.\Start-VoxCPM.cmd --device auto
 ```
 
 ```powershell
