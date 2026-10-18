@@ -74,6 +74,9 @@ public partial class MainWindow : Window
         StreamSpeech.IsChecked = settings.StreamSpeech;
         SpeechVolume.Value = double.IsFinite(settings.SpeechVolumePercent) ? Math.Clamp(settings.SpeechVolumePercent, 0, 400) : 100;
         SpeechSpeed.Value = PcmTempoProvider.ValidateSpeed(settings.SpeechSpeed);
+        var levels = (settings.PlaybackLevels ?? new()).Validated();
+        AutoVolume.IsChecked = levels.Enabled;
+        VolumeMinimum.Value = levels.MinimumDb; VolumeMaximum.Value = levels.MaximumDb; VolumePeak.Value = levels.PeakDb;
         MainPin.IsChecked = settings.MainTopmost;
         ReferenceLanguage.ItemsSource = new[] { new LanguageOption("ja", "日語版原聲"), new("en", "英語版原聲"), new("de", "德語版原聲"), new("fr", "法語版原聲") };
         ReferenceLanguage.SelectedValue = settings.ReferenceLanguage;
@@ -103,11 +106,16 @@ public partial class MainWindow : Window
             if (streamingPlayer is not null) streamingPlayer.Gain = (float)(SpeechVolume.Value / 100);
             QueueSettingsSave();
         };
+        AutoVolume.Checked += (_, _) => UpdatePlaybackLevels();
         SpeechSpeed.ValueChanged += (_, _) =>
         {
             if (streamingPlayer is not null) streamingPlayer.Speed = SpeechSpeed.Value;
             QueueSettingsSave();
         };
+        AutoVolume.Unchecked += (_, _) => UpdatePlaybackLevels();
+        VolumeMinimum.ValueChanged += (_, _) => { if (VolumeMinimum.Value > VolumeMaximum.Value - 3) VolumeMaximum.Value = VolumeMinimum.Value + 3; UpdatePlaybackLevels(); };
+        VolumeMaximum.ValueChanged += (_, _) => { if (VolumeMinimum.Value > VolumeMaximum.Value - 3) VolumeMinimum.Value = VolumeMaximum.Value - 3; UpdatePlaybackLevels(); };
+        VolumePeak.ValueChanged += (_, _) => UpdatePlaybackLevels();
         Server.TextChanged += (_, _) => QueueSettingsSave();
         DefaultDescription.TextChanged += (_, _) => { QueueSettingsSave(); RefreshVoiceMapping(); };
         Original.TextChanged += (_, _) => { subtitlesCleared = false; UpdateSubtitles(); };
@@ -198,7 +206,7 @@ public partial class MainWindow : Window
         if (StreamSpeech.IsChecked == true)
         {
             Status.Text = $"{name} · 等候首段聲音…";
-            using var playback = new StreamingPcmPlayer { Gain = (float)(SpeechVolume.Value / 100), Speed = SpeechSpeed.Value };
+            using var playback = new StreamingPcmPlayer { Gain = (float)(SpeechVolume.Value / 100), Levels = CurrentPlaybackLevels(), Speed = SpeechSpeed.Value };
             streamingPlayer = playback;
             var started = Stopwatch.StartNew(); bool first = true;
             try
@@ -222,7 +230,7 @@ public partial class MainWindow : Window
         token.ThrowIfCancellationRequested();
         if (version != generation) return;
         if (CurrentHasNativeAudio()) { Status.Text = NativeAudioStatus; return; }
-        using var completePlayback = new StreamingPcmPlayer { Gain = (float)(SpeechVolume.Value / 100), Speed = SpeechSpeed.Value };
+        using var completePlayback = new StreamingPcmPlayer { Gain = (float)(SpeechVolume.Value / 100), Levels = CurrentPlaybackLevels(), Speed = SpeechSpeed.Value };
         streamingPlayer = completePlayback;
         try
         {
@@ -235,6 +243,12 @@ public partial class MainWindow : Window
     }
     private void VolumePreset_Click(object sender, RoutedEventArgs e) => SpeechVolume.Value = double.Parse(((Button)sender).Tag.ToString()!, System.Globalization.CultureInfo.InvariantCulture);
     private void SpeedReset_Click(object sender, RoutedEventArgs e) => SpeechSpeed.Value = 1;
+    private PlaybackLevelSettings CurrentPlaybackLevels() => new(AutoVolume.IsChecked == true, VolumeMinimum.Value, VolumeMaximum.Value, VolumePeak.Value);
+    private void UpdatePlaybackLevels()
+    {
+        if (streamingPlayer is not null) streamingPlayer.Levels = CurrentPlaybackLevels();
+        QueueSettingsSave();
+    }
     private void UpdateTranslationControls()
     {
         var engine = TranslationEngine.SelectedValue?.ToString();
@@ -450,6 +464,7 @@ public partial class MainWindow : Window
         settings.StreamSpeech = StreamSpeech.IsChecked == true;
         settings.SpeechVolumePercent = SpeechVolume.Value;
         settings.SpeechSpeed = SpeechSpeed.Value;
+        settings.PlaybackLevels = CurrentPlaybackLevels();
         settings.SpeechMode = SpeechMode.SelectedValue?.ToString() ?? "translated";
         settings.MainTopmost = MainPin.IsChecked == true;
         settings.ReferenceLanguage = ReferenceLanguage.SelectedValue?.ToString() ?? "ja";

@@ -36,6 +36,7 @@ public sealed class Settings
     public bool StreamSpeech { get; set; } = true;
     public double SpeechVolumePercent { get; set; } = 100;
     public double SpeechSpeed { get; set; } = 1;
+    public PlaybackLevelSettings PlaybackLevels { get; set; } = new();
     public string SpeechMode { get; set; } = "translated";
     public bool MainTopmost { get; set; }
     public SubtitleSettings Subtitles { get; set; } = new();

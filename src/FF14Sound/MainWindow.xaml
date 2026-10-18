@@ -19,7 +19,24 @@
     <TextBlock Text="{Binding ElementName=SpeechVolume, Path=Value, StringFormat={}{0:F0}%}" Width="48" VerticalAlignment="Center"/>
     <Button Content="100%" Click="VolumePreset_Click" Tag="100" Padding="8,2"/>
     <Button Content="200%" Click="VolumePreset_Click" Tag="200" Padding="8,2"/>
+    <CheckBox x:Name="AutoVolume" Content="自動平衡音量" VerticalAlignment="Center" Margin="12,0" ToolTip="細聲適度推高、大聲壓低；只影響本程式配音，唔改遊戲或系統音量。"/>
    </WrapPanel>
+   <Expander x:Name="VolumeRange" Header="自動音量範圍" Margin="0,4,0,0">
+    <StackPanel>
+     <WrapPanel>
+      <TextBlock Text="人聲下限" VerticalAlignment="Center"/>
+      <Slider x:Name="VolumeMinimum" Minimum="-40" Maximum="-11" Value="-26" Width="130" TickFrequency="1" IsSnapToTickEnabled="True" Margin="8,0"/>
+      <TextBlock Text="{Binding ElementName=VolumeMinimum, Path=Value, StringFormat={}{0:F0} dBFS}" Width="72" VerticalAlignment="Center"/>
+      <TextBlock Text="人聲上限" VerticalAlignment="Center"/>
+      <Slider x:Name="VolumeMaximum" Minimum="-30" Maximum="-8" Value="-16" Width="130" TickFrequency="1" IsSnapToTickEnabled="True" Margin="8,0"/>
+      <TextBlock Text="{Binding ElementName=VolumeMaximum, Path=Value, StringFormat={}{0:F0} dBFS}" Width="72" VerticalAlignment="Center"/>
+      <TextBlock Text="峰值上限" VerticalAlignment="Center"/>
+      <Slider x:Name="VolumePeak" Minimum="-12" Maximum="-1" Value="-3" Width="110" TickFrequency="1" IsSnapToTickEnabled="True" Margin="8,0"/>
+      <TextBlock Text="{Binding ElementName=VolumePeak, Path=Value, StringFormat={}{0:F0} dBFS}" Width="72" VerticalAlignment="Center"/>
+     </WrapPanel>
+     <TextBlock Text="越接近 0 越大聲。人聲上下限係調整目標；最多自動推高 12 dB，靜音唔推高。峰值上限限制輸出訊號，實際聽感仍受 Windows／喇叭音量影響。" TextWrapping="Wrap" FontSize="12" Foreground="#53627C"/>
+    </StackPanel>
+   </Expander>
    <WrapPanel Margin="0,6,0,0">
     <TextBlock Text="配音速度" VerticalAlignment="Center"/>
     <Slider x:Name="SpeechSpeed" Minimum="0.75" Maximum="1.50" Value="1" TickFrequency="0.05" SmallChange="0.05" LargeChange="0.1" IsSnapToTickEnabled="True" Width="210" Margin="12,0" VerticalAlignment="Center" ToolTip="0.75× 慢速，1.00× 原速，1.50× 快速；調節節奏並保留音高。播放中可改，已排入音效裝置嘅短緩衝播完後生效。"/>

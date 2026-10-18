@@ -15,6 +15,7 @@ public sealed class StreamingPcmPlayer : IDisposable
     private bool inputComplete;
     public double Speed { get => tempoProvider.Speed; set => tempoProvider.Speed = value; }
     public float Gain { get => gainProvider.Gain; set => gainProvider.Gain = value; }
+    public PlaybackLevelSettings Levels { get => gainProvider.Levels; set => gainProvider.Levels = value; }
     private bool started, disposed;
     public StreamingPcmPlayer()
     {

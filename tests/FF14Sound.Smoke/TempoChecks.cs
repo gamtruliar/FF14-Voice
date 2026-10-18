@@ -91,7 +91,7 @@ internal static class TempoChecks
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
         foreach (var speed in new[] { .75, 1, 1.5 })
         {
-            using var player = new StreamingPcmPlayer { Speed = speed };
+            using var player = new StreamingPcmPlayer { Speed = speed, Levels = new(true) };
             await player.Add(new byte[19200], timeout.Token);
             await player.Finish(timeout.Token);
         }
