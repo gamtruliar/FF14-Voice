@@ -10,9 +10,7 @@ FF14 Voice 係一個獨立 Windows app，為《FINAL FANTASY XIV》對白加入�
 
 ## 示範影片
 
-想即刻試播：clone／下載 repo 後，雙擊 **`Play-Demos.cmd`**，或者用瀏覽器開啟 [`vdo/index.html`](vdo/index.html)，同一頁可以播放全部 5 段影片（有聲音及播放控制）。內容包含遊戲劇情。
-
-下面係 MP4 檔案連結，使用相對路徑，唔需要寫死 GitHub 帳號、repo 名或 branch。GitHub 檔案頁未提供播放時，可按 Download raw file 下載後播放；**預覽圖本身唔係內嵌播放器**。[GitHub README 內嵌播放設定](vdo/README.md#github-readme-內嵌播放)可喺 repo 建立後另加，唔影響本機播放。
+實際遊戲中嘅對白翻譯、字幕同角色配音示範。**影片包含遊戲劇情。**
 
 | | |
 | --- | --- |
@@ -40,7 +38,7 @@ FF14 Voice 係一個獨立 Windows app，為《FINAL FANTASY XIV》對白加入�
 
 | 需要 | 用途 |
 | --- | --- |
-| Windows x64 | WPF 桌面程式及遊戲 reader |
+| Windows x64 | 執行桌面程式及讀取遊戲對白 |
 | .NET **10 SDK** | 編譯 app 及資源工具；只裝 Runtime 唔夠 |
 | Git | 下載主 repo 同兩個 submodule |
 | Python 3.10–3.12、`uv` | 安裝本機 VoxCPM 環境 |
@@ -54,10 +52,8 @@ FF14 Voice 係一個獨立 Windows app，為《FINAL FANTASY XIV》對白加入�
 
 ### 1. 下載完整 repo
 
-喺本 repo 嘅 **Code → HTTPS** 複製網址，再執行（將 `<repo-url>` 換成嗰個網址）：
-
 ```powershell
-git clone --recurse-submodules <repo-url> ff14-voice
+git clone --recurse-submodules https://github.com/gamtruliar/FF14-Voice.git ff14-voice
 cd ff14-voice
 ```
 
@@ -77,7 +73,7 @@ git submodule update --init --recursive
 # .\Setup-VoxCPM.cmd -CpuOnly
 ```
 
-安裝器建立 `VoxCPM/.venv`，並安裝 Gemini adapter 所需依賴。第一次生成／預載時會下載 `openbmb/VoxCPM2`，模型存喺 `.cache/huggingface/`。
+第一次生成／預載時會下載 VoxCPM2 模型，請保持網絡連線並等候完成。
 
 ### 3. 由自己嘅 client 重建遊戲資源
 
@@ -93,9 +89,9 @@ git submodule update --init --recursive
 .\Restore-GameResources.cmd -SqPack "C:\Program Files (x86)\SquareEnix\FINAL FANTASY XIV - A Realm Reborn\game\sqpack"
 ```
 
-Steam 預設位置係 `C:\Program Files (x86)\Steam\steamapps\common\FINAL FANTASY XIV Online\game\sqpack`。工具按目前 Windows 嘅 `ProgramFiles(x86)` 位置偵測；自訂 Steam library 請用 `-SqPack` 指定。
+Steam 預設位置係 `C:\Program Files (x86)\Steam\steamapps\common\FINAL FANTASY XIV Online\game\sqpack`；自訂 Steam library 請用 `-SqPack` 指定。
 
-工具會讀取遊戲檔，建立聲音庫、NPC 名稱表、配對證據同原錄音索引，輸出至 `data/game-voices/`；掃描報告喺 `artifacts/game-voices/`。**唔會修改遊戲檔案。** 路徑優先次序：`-SqPack` → 環境變數 `FF14_SQPACK` → 預設位置；全部冇提供／搵唔到先詢問。
+工具會由已安裝嘅遊戲建立聲音庫同對白索引，**唔會修改遊戲檔案**。搵唔到安裝位置時會提示你輸入路徑。
 
 呢步係首次使用配音嘅必要步驟：欠缺原錄音索引時，app 會暫停配音。遊戲更新後可再執行同一命令，完成後重開 app。重建會更新生成資源，包括之前挑選過嘅 reference；個人設定另存於 LocalAppData。
 
@@ -128,11 +124,11 @@ Backend 測試頁：<http://127.0.0.1:8808>。可以先用 web UI 試文字生�
 
 唔開遊戲都可以填 NPC 名同對白，按「翻譯 + 配音」試用。一般設定會自動保存；NPC 表及角色 profile 編輯有各自儲存按鈕。
 
-Gemini：將自己嘅 key 存成單行文字檔，喺 GUI 選取，再按「更新模型」揀帳戶可用模型。`APIKey/` 已忽略，不要提交 key。Ollama 會把本句及相關詞條傳到你設定嘅服務；Google／Gemini 會把翻譯內容傳到各自雲端服務。TTS 在本機執行。
+Gemini：將自己嘅 key 存成單行文字檔，喺 GUI 選取，再按「更新模型」揀帳戶可用模型。請妥善保管 API key。Ollama 會把本句及相關詞條傳到你設定嘅服務；Google／Gemini 會把翻譯內容傳到各自雲端服務。TTS 在本機執行。
 
 ## 進階用法
 
-- [資源重建指南](docs/game-resources.md)：由乾淨 clone 取得未 commit 嘅遊戲資源、繁中配對、更新及排錯。
+- [資源重建指南](docs/game-resources.md)：建立聲音庫、加入繁中對白、更新資源及排錯。
 - [進階設定與開發](docs/advanced.md)：WSL2 / vLLM-Omni 串流、字幕、聲線、快取、背景預配、詞表及測試。
 
 ## 常見問題
@@ -146,20 +142,6 @@ Gemini：將自己嘅 key 存成單行文字檔，喺 GUI 選取，再按「更�
 **有啲 NPC 配唔到／聲線唔似？** 聲音庫只涵蓋掃描器識別到嘅 VoiceMan 資源；同名、缺少所選語言、短樣本及多人錄音都可能影響結果。可以手動配對／自訂 reference；未配對聲線屬創作，唔代表官方聲優。
 
 **遊戲更新後讀唔到對白？** 即時 reader 沿用 TataruHelper，可能需要更新 reader／offset；重建音檔索引唔會修復記憶體讀取相容性。
-
-## 專案結構
-
-```text
-src/FF14Sound/                Windows GUI、翻譯、字幕、播放及快取
-src/FF14Sound.TataruBridge/   Tataru 即時 reader 整合
-src/FF14Sound.Voices/         遊戲資源、聲線及對白索引
-tools/Restore-GameResources.ps1  遊戲資源重建入口
-tools/voxcpm/                FF14 專用 backend、web UI 及測試
-tools/FF14Sound.*/           掃描、聲音庫及背景預配 CLI
-TataruHelper/、VoxCPM/        上游 submodule
-data/                       詞表及本機生成資料
-vdo/                        示範影片
-```
 
 ## 鳴謝與授權
 
