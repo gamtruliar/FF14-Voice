@@ -7,6 +7,16 @@ if (args.Length == 4 && args[0] == "--traditional-dialogue")
     return report.Errors.Length == 0 ? 0 : 2;
 }
 if (args.Length == 2 && args[0] == "--inspect-languages") { Inspect.Languages(args[1]); return 0; }
+if (args.Length == 5 && args[0] == "--ref-candidates-all")
+{
+    await ReferenceCandidates.ExportAll(args[1], args[2], args[3], args[4], CancellationToken.None);
+    return 0;
+}
+if (args.Length == 6 && args[0] == "--ref-candidates")
+{
+    await ReferenceCandidates.Export(args[1], args[2], args[3], args[4], args[5], CancellationToken.None);
+    return 0;
+}
 if (args.Length == 3 && args[0] == "--native-index")
 {
     var index = NativeDialogue.Build(args[1], args[2]);

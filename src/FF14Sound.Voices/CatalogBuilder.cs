@@ -123,7 +123,7 @@ public static class CatalogBuilder
         return matched.SelectMany(p => p.Value.Values).Distinct().ToArray();
     }
 
-    private static void WriteAdpcm(ScdFile.Audio audio, string destination)
+    internal static void WriteAdpcm(ScdFile.Audio audio, string destination)
     {
         var format = (AdpcmWaveFormat)audio.AudioDataHeader!;
         var memory = Marshal.AllocHGlobal(Marshal.SizeOf<AdpcmWaveFormat>());
