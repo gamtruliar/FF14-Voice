@@ -270,6 +270,21 @@ public partial class MainWindow : Window
         if (streamingPlayer is not null) streamingPlayer.Levels = CurrentPlaybackLevels();
         QueueSettingsSave();
     }
+    private async void RetryVoice_Click(object sender, RoutedEventArgs e) => await RunSpeech(async (token, version) =>
+    {
+        var name = Speaker.Text.Trim();
+        if (name.Length == 0) throw new InvalidOperationException("請先選擇角色。");
+        ObserveNpc();
+        var original = SpeechMode.SelectedValue?.ToString() == "original";
+        var language = (original ? SourceLanguage : TargetLanguage).SelectedValue?.ToString() ?? "en";
+        var assignment = library.ResolveAssignment(name, language, settings, npcVoices.DescriptionFor(name, DefaultDescription.Text.Trim()), npcVoices.Find(name)?.Key);
+        var seed = VoiceSeed.Reroll(settings, assignment.Profile);
+        SaveCurrentSettings();
+        Status.Text = $"{name} · 已換 Seed：{seed} · 新聲線會沿用呢粒 seed";
+        if (string.IsNullOrWhiteSpace(original ? Original.Text : Translated.Text))
+        { Status.Text += original ? "；輸入原文後按配音試聲。" : "；先翻譯或輸入譯文，再按配音試聲。"; return; }
+        await SpeakCurrent(token, version);
+    });
     private void UpdateTranslationControls()
     {
         var engine = TranslationEngine.SelectedValue?.ToString();
@@ -672,6 +687,7 @@ public partial class MainWindow : Window
         var name = Speaker.Text.Trim();
         if (name.Length == 0)
         {
+            RetryVoice.IsEnabled = false;
             CurrentVoice.Text = "使用聲音：等候 NPC 名稱"; CurrentVoice.ToolTip = null;
             CurrentVoiceDescriptionLabel.Text = "Voice description"; CurrentVoiceDescription.Text = "等候 NPC 名稱"; return;
         }
@@ -689,6 +705,7 @@ public partial class MainWindow : Window
     }
     private void ShowVoiceMapping(string name, VoiceAssignment assignment)
     {
+        RetryVoice.IsEnabled = name.Length > 0;
         var learned = SpeechCache.LearnedReference(SpeechClient.CacheFolder(settings), assignment.Profile);
         var label = learned is not null ? "default · 沿用首次生成聲線（專屬 REF）" : assignment.Label;
         CurrentVoice.Text = $"使用聲音：{name} → {label} · Seed：{assignment.Profile.EffectiveSeed}";

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.IO;
 using FF14Sound;
 
 internal static class VoiceSeedChecks
@@ -30,6 +31,25 @@ internal static class VoiceSeedChecks
         first.Seed = first.EffectiveSeed ^ 1;
         var b = await speech.CachePath("http://localhost:8808", "hello", first, folder, CancellationToken.None);
         Check(a != b, "Changed seed cannot replay audio cached with previous seed");
+        var retrySettings = new Settings();
+        var oldVoice = library.Resolve("Retry NPC", "ja", retrySettings, npcIdentity: "123");
+        var oldCache = await speech.CachePath("http://localhost:8808", "same line", oldVoice, folder, CancellationToken.None);
+        File.WriteAllBytes(oldCache, SpeechCacheChecks.Wave());
+        SpeechCache.Complete(folder, oldCache, oldVoice, CancellationToken.None);
+        var oldReference = SpeechCache.LearnedReference(folder, oldVoice);
+        var newSeed = VoiceSeed.Reroll(retrySettings, oldVoice);
+        var settingsFile = Path.Combine(folder, "retry-seed-settings.json");
+        retrySettings.Save(settingsFile);
+        var retryVoice = new GameVoiceLibrary().Resolve("Retry NPC localized", "yue", Settings.Load(settingsFile), npcIdentity: "123");
+        Check(newSeed != oldVoice.EffectiveSeed && retryVoice.EffectiveSeed == newSeed, "Reroll persists across restart and localized names");
+        Check(SpeechCache.LearnedReference(folder, retryVoice) is null && File.Exists(oldReference), "New seed starts without previous learned reference and preserves its file");
+        var newCache = await speech.CachePath("http://localhost:8808", "same line", retryVoice, folder, CancellationToken.None);
+        Check(newCache != oldCache, "Rerolled voice must not replay previous sentence cache");
+        File.WriteAllBytes(newCache, SpeechCacheChecks.Wave());
+        SpeechCache.Complete(folder, newCache, retryVoice, CancellationToken.None);
+        Check(SpeechCache.LearnedReference(folder, retryVoice) is not null && SpeechCache.LearnedReference(folder, retryVoice) != oldReference && File.Exists(oldCache), "Retry learns a separate reference without removing previous audio");
+        Check(library.Resolve("Another NPC", "ja", retrySettings).EffectiveSeed == library.Resolve("Another NPC", "ja", new Settings()).EffectiveSeed, "Reroll does not change other NPCs");
+        Check(library.Resolve("Retry NPC", "ja", retrySettings, npcIdentity: "123").EffectiveSeed == newSeed, "Next sentence keeps rerolled seed");
         Console.WriteLine("PASS: per-NPC stable seeds, localized identity, profile persistence, original dubbing and cache separation.");
     }
 }

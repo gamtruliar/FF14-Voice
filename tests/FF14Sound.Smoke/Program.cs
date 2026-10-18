@@ -103,6 +103,11 @@ internal static class Program
             if (((TextBlock)window.FindName("CurrentVoiceDescription")).Text != "等候 NPC 名稱") throw new Exception("Old voice description was not cleared");
             speaker.Text = "ウジェノア";
         }
+        ((TextBox)window.FindName("Original")).Clear();
+        var voiceBeforeRetry = currentVoice.Text;
+        ((Button)window.FindName("RetryVoice")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        if (currentVoice.Text == voiceBeforeRetry || Settings.Load(testSettingsPath).VoiceSeedOverrides.Count == 0) throw new Exception("Retry button did not change and save the current NPC seed");
+        if (!((TextBlock)window.FindName("Status")).Text.Contains("輸入原文")) throw new Exception("Empty retry should save seed and request a sample without generating");
         ((TextBox)window.FindName("OllamaUrl")).Text = "https://custom.example.com/ollama/";
         var browserSession = CloudflareAccess.FromToken("https://custom.example.com/ollama/", OllamaChecks.TestToken());
         typeof(MainWindow).GetField("accessSession", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.SetValue(window, browserSession);

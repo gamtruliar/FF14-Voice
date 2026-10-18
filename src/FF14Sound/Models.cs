@@ -45,6 +45,7 @@ public sealed class Settings
     public string SpeechCacheFolder { get; set; } = "";
     public string DefaultVoiceDescription { get; set; } = "自然、清晰、親切，中等語速，平穩敘述。";
     public Dictionary<string, string> SpeakerAliases { get; set; } = new();
+    public Dictionary<string, uint> VoiceSeedOverrides { get; set; } = new();
     public List<VoiceProfile> Voices { get; set; } = [];
     public static string Folder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FF14Sound");
     public static Settings Load(string? path = null)

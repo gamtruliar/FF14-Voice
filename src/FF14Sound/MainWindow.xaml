@@ -69,6 +69,7 @@
      <Border Background="#E6EDF5" Padding="8" Margin="0,0,0,8" CornerRadius="4">
       <StackPanel>
        <TextBlock x:Name="CurrentVoice" Text="使用聲音：等候 NPC 名稱" TextWrapping="Wrap" Foreground="#274B70"/>
+       <Button x:Name="RetryVoice" Content="轉 seed／重試聲線" Click="RetryVoice_Click" HorizontalAlignment="Left" Margin="0,6,0,0" ToolTip="保存新 seed，再用目前配音內容試聲。Default 會重新定聲，成功後沿用新 REF；已有遊戲／自訂 REF 則繼續 clone 該 REF。舊音檔保留。"/>
        <TextBlock x:Name="CurrentVoiceDescriptionLabel" Text="Voice description" FontWeight="SemiBold" Margin="0,6,0,2"/>
        <ScrollViewer MaxHeight="96" VerticalScrollBarVisibility="Auto"><TextBlock x:Name="CurrentVoiceDescription" Text="等候 NPC 名稱" TextWrapping="Wrap" Foreground="#334966"/></ScrollViewer>
       </StackPanel>

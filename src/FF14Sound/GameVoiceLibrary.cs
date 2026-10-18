@@ -44,7 +44,7 @@ public sealed class GameVoiceLibrary
         if (custom is not null)
         {
             custom.Seed ??= VoiceSeed.ForSpeaker(custom.Speaker);
-            return new(custom, Path.GetFileName(custom.ReferenceAudio), "自訂聲音覆蓋", "");
+            return new(VoiceSeed.ApplyOverride(settings, custom), Path.GetFileName(custom.ReferenceAudio), "自訂聲音覆蓋", "");
         }
         var match = Resolver?.Resolve(speaker, settings.ReferenceLanguage, settings.SpeakerAliases);
         if (match is null)
@@ -58,7 +58,7 @@ public sealed class GameVoiceLibrary
                     ? "name:" + VoiceResolver.Normalize(speaker) : "npc:" + npcIdentity,
                 IsFallback = true
             };
-            return new(fallback, "default", "文字生成（無 clone / 無 reference）", "");
+            return new(VoiceSeed.ApplyOverride(settings, fallback), "default", "文字生成（無 clone / 無 reference）", "");
         }
         var profile = new VoiceProfile
         {
@@ -66,7 +66,7 @@ public sealed class GameVoiceLibrary
             // Translation crosses languages: use timbre cloning, not reference-text continuation.
             Transcript = "", Seed = VoiceSeed.For("voice:" + match.Voice.Token), VoiceIdentity = "voice:" + match.Voice.Token
         };
-        return new(profile, match.Voice.Token, match.MatchedBy == "user alias" ? "手動配對原聲" : "自動配對原聲", match.Reference.Language);
+        return new(VoiceSeed.ApplyOverride(settings, profile), match.Voice.Token, match.MatchedBy == "user alias" ? "手動配對原聲" : "自動配對原聲", match.Reference.Language);
     }
 
     public void DescribeRow(NpcVoiceEntry row, Settings settings)
