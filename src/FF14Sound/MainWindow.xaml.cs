@@ -73,6 +73,7 @@ public partial class MainWindow : Window
         AutoSpeak.IsChecked = settings.AutoSpeak;
         StreamSpeech.IsChecked = settings.StreamSpeech;
         SpeechVolume.Value = double.IsFinite(settings.SpeechVolumePercent) ? Math.Clamp(settings.SpeechVolumePercent, 0, 400) : 100;
+        SpeechSpeed.Value = PcmTempoProvider.ValidateSpeed(settings.SpeechSpeed);
         MainPin.IsChecked = settings.MainTopmost;
         ReferenceLanguage.ItemsSource = new[] { new LanguageOption("ja", "日語版原聲"), new("en", "英語版原聲"), new("de", "德語版原聲"), new("fr", "法語版原聲") };
         ReferenceLanguage.SelectedValue = settings.ReferenceLanguage;
@@ -100,6 +101,11 @@ public partial class MainWindow : Window
         SpeechVolume.ValueChanged += (_, _) =>
         {
             if (streamingPlayer is not null) streamingPlayer.Gain = (float)(SpeechVolume.Value / 100);
+            QueueSettingsSave();
+        };
+        SpeechSpeed.ValueChanged += (_, _) =>
+        {
+            if (streamingPlayer is not null) streamingPlayer.Speed = SpeechSpeed.Value;
             QueueSettingsSave();
         };
         Server.TextChanged += (_, _) => QueueSettingsSave();
@@ -192,7 +198,7 @@ public partial class MainWindow : Window
         if (StreamSpeech.IsChecked == true)
         {
             Status.Text = $"{name} · 等候首段聲音…";
-            using var playback = new StreamingPcmPlayer { Gain = (float)(SpeechVolume.Value / 100) };
+            using var playback = new StreamingPcmPlayer { Gain = (float)(SpeechVolume.Value / 100), Speed = SpeechSpeed.Value };
             streamingPlayer = playback;
             var started = Stopwatch.StartNew(); bool first = true;
             try
@@ -216,7 +222,7 @@ public partial class MainWindow : Window
         token.ThrowIfCancellationRequested();
         if (version != generation) return;
         if (CurrentHasNativeAudio()) { Status.Text = NativeAudioStatus; return; }
-        using var completePlayback = new StreamingPcmPlayer { Gain = (float)(SpeechVolume.Value / 100) };
+        using var completePlayback = new StreamingPcmPlayer { Gain = (float)(SpeechVolume.Value / 100), Speed = SpeechSpeed.Value };
         streamingPlayer = completePlayback;
         try
         {
@@ -228,6 +234,7 @@ public partial class MainWindow : Window
         finally { if (ReferenceEquals(streamingPlayer, completePlayback)) streamingPlayer = null; }
     }
     private void VolumePreset_Click(object sender, RoutedEventArgs e) => SpeechVolume.Value = double.Parse(((Button)sender).Tag.ToString()!, System.Globalization.CultureInfo.InvariantCulture);
+    private void SpeedReset_Click(object sender, RoutedEventArgs e) => SpeechSpeed.Value = 1;
     private void UpdateTranslationControls()
     {
         var engine = TranslationEngine.SelectedValue?.ToString();
@@ -442,6 +449,7 @@ public partial class MainWindow : Window
         settings.AutoSpeak = AutoSpeak.IsChecked == true;
         settings.StreamSpeech = StreamSpeech.IsChecked == true;
         settings.SpeechVolumePercent = SpeechVolume.Value;
+        settings.SpeechSpeed = SpeechSpeed.Value;
         settings.SpeechMode = SpeechMode.SelectedValue?.ToString() ?? "translated";
         settings.MainTopmost = MainPin.IsChecked == true;
         settings.ReferenceLanguage = ReferenceLanguage.SelectedValue?.ToString() ?? "ja";

@@ -44,6 +44,7 @@ internal static class StreamingChecks
     }
     public static async Task Run(string folder)
     {
+        TempoChecks.Run();
         var original = new byte[] { 0xe8, 0x03, 0x18, 0xfc, 0x20, 0x4e, 0xe0, 0xb1, 0xf4, 0x01, 0x0c, 0xfe };
         var source = new BufferedWaveProvider(new WaveFormat(48000, 16, 1)) { ReadFully = false };
         source.AddSamples(original, 0, original.Length);

@@ -20,6 +20,12 @@
     <Button Content="100%" Click="VolumePreset_Click" Tag="100" Padding="8,2"/>
     <Button Content="200%" Click="VolumePreset_Click" Tag="200" Padding="8,2"/>
    </WrapPanel>
+   <WrapPanel Margin="0,6,0,0">
+    <TextBlock Text="配音速度" VerticalAlignment="Center"/>
+    <Slider x:Name="SpeechSpeed" Minimum="0.75" Maximum="1.50" Value="1" TickFrequency="0.05" SmallChange="0.05" LargeChange="0.1" IsSnapToTickEnabled="True" Width="210" Margin="12,0" VerticalAlignment="Center" ToolTip="0.75× 慢速，1.00× 原速，1.50× 快速；調節節奏並保留音高。播放中可改，已排入音效裝置嘅短緩衝播完後生效。"/>
+    <TextBlock Text="{Binding ElementName=SpeechSpeed, Path=Value, StringFormat={}{0:F2}×}" Width="48" VerticalAlignment="Center"/>
+    <Button Content="原速" Click="SpeedReset_Click" Padding="8,2"/>
+   </WrapPanel>
    <TextBlock Text="已識別有原錄音嘅句子交由 GAME 播放；只補冇聲對白。角色 REF 保留作 clone。" Foreground="#725515" Margin="0,4,0,12"/>
   </StackPanel>
   <TextBlock x:Name="Status" DockPanel.Dock="Bottom" Text="未連接 · 可先手動測試" TextWrapping="Wrap" Margin="0,12,0,0" Foreground="#334966"/>

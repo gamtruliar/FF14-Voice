@@ -8,7 +8,10 @@
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="../../Licenses/SoundTouch.Net.txt" Link="Licenses/SoundTouch.Net.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="../../Licenses/SoundTouch.Net-NOTICE.txt" Link="Licenses/SoundTouch.Net-NOTICE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../data/translation-glossary*.json" Link="Glossary/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <PackageReference Include="SoundTouch.Net" Version="2.3.2" />
     <ProjectReference Include="../FF14Sound.Voices/FF14Sound.Voices.csproj" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />
     <PackageReference Include="NAudio.WinMM" Version="2.2.1" />

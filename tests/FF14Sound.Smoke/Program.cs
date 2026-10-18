@@ -12,6 +12,9 @@ internal static class Program
     private static void Main(string[] args)
     {
         Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+        if (args.Length == 1 && args[0] == "--tempo-check") { TempoChecks.Run(); return; }
+        if (args.Length == 1 && args[0] == "--tempo-device") { TempoChecks.Playback().GetAwaiter().GetResult(); return; }
+        if (args.Length == 3 && args[0] == "--tempo-review") { TempoChecks.Export(args[1], args[2]); return; }
         IntegrationChecks.Run().GetAwaiter().GetResult();
         if (args.Contains("--learned-live"))
             SpeechCacheChecks.Live(Path.GetDirectoryName(Path.GetFullPath(args[0]))!).GetAwaiter().GetResult();
@@ -42,6 +45,9 @@ internal static class Program
         ((TextBox)window.FindName("GeminiKeyFile")).Text = "APIKey/qqDragon.txt";
         if (volumeOption.Value != 100) throw new Exception("Old settings must retain 100% playback gain");
         volumeOption.Value = 200;
+        var speedOption = (Slider)window.FindName("SpeechSpeed");
+        if (speedOption.Value != 1) throw new Exception("Old settings must retain normal tempo");
+        speedOption.Value = 1.25;
         var speaker = (TextBox)window.FindName("Speaker");
         var currentVoice = (TextBlock)window.FindName("CurrentVoice");
         var nativeCatalog = GameVoiceLibrary.FindCatalog();
@@ -98,10 +104,12 @@ internal static class Program
         var autosaved = Settings.Load(testSettingsPath);
         if (autosaved.StreamSpeech) throw new Exception("Streaming toggle was not autosaved");
         if (autosaved.SpeechVolumePercent != 200) throw new Exception("Playback volume was not autosaved");
+        if (autosaved.SpeechSpeed != 1.25) throw new Exception("Playback speed was not autosaved");
         if (autosaved.TranslationEngine != "ollama" || autosaved.OllamaModel != "test-local-model" || autosaved.OllamaUrl != "https://custom.example.com/ollama/") throw new Exception("Custom Ollama settings did not persist");
         if (autosaved.GeminiModel != "gemini-3.8-flash" || autosaved.GeminiKeyFile != "APIKey/qqDragon.txt") throw new Exception("Gemini settings did not persist");
         if (CloudflareAccess.Restore(autosaved.OllamaBrowserSessionProtected)?.Token != browserSession.Token || File.ReadAllText(testSettingsPath).Contains(browserSession.Token)) throw new Exception("Cloudflare session must persist encrypted");
         var reopened = new MainWindow(testSettingsPath);
+        if (((Slider)reopened.FindName("SpeechSpeed")).Value != 1.25) throw new Exception("Playback speed did not reload");
         if (!((TextBlock)reopened.FindName("AccessStatus")).Text.Contains("有效至")) throw new Exception("Stored Cloudflare session did not reload");
         typeof(MainWindow).GetMethod("AccessClear_Click", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(reopened, new object[] { reopened, new RoutedEventArgs() });
         reopened.Close();

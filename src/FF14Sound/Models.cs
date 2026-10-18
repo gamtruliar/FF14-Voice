@@ -35,6 +35,7 @@ public sealed class Settings
     public bool AutoSpeak { get; set; } = true;
     public bool StreamSpeech { get; set; } = true;
     public double SpeechVolumePercent { get; set; } = 100;
+    public double SpeechSpeed { get; set; } = 1;
     public string SpeechMode { get; set; } = "translated";
     public bool MainTopmost { get; set; }
     public SubtitleSettings Subtitles { get; set; } = new();

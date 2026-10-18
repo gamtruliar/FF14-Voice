@@ -1,0 +1,6 @@
+FF14Sound uses SoundTouch.Net 2.3.2, dynamically linked as SoundTouch.Net.dll.
+SoundTouch audio processing library: Copyright (c) Olli Parviainen.
+C# port: Copyright (c) Olaf Woudenberg.
+Licensed under GNU LGPL version 2.1 or later; see SoundTouch.Net.txt.
+The library is unmodified. Project and source: https://github.com/owoudenberg/soundtouch.net
+Package: https://www.nuget.org/packages/SoundTouch.Net/2.3.2
