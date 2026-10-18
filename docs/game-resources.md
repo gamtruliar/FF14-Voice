@@ -4,23 +4,38 @@ Fresh clone 冇遊戲音檔係正常嘅。資源工具會由你已安裝嘅 FF14
 
 ## 最簡單用法
 
-先準備 .NET 10 SDK、PATH 上嘅 `ffmpeg`，同已安裝嘅國際版 client。喺 repo 根目錄執行：
+先準備 .NET 10 SDK、PATH 上嘅 `ffmpeg`，同已安裝嘅國際版 client。喺 repo 根目錄執行，會自動偵測預設安裝位置：
 
 ```powershell
-.\Restore-GameResources.cmd -SqPack "D:\Games\FFXIV\game\sqpack"
+.\Restore-GameResources.cmd
 ```
 
-路徑內應該有 `ffxiv/`，以及已安裝資料片嘅 `ex1/` 等目錄。亦可先設定 `$env:FF14_SQPACK = 'D:\Games\FFXIV\game\sqpack'`，之後直接執行 `.\Restore-GameResources.cmd`；未指定時工具會詢問。
+偵測順序係 Square Enix 版，再試 Steam 版；使用 Windows 嘅 `ProgramFiles(x86)` 位置，通常係：
+
+| 版本 | `game\sqpack` 路徑 |
+| --- | --- |
+| Square Enix | `C:\Program Files (x86)\SquareEnix\FINAL FANTASY XIV - A Realm Reborn\game\sqpack` |
+| Steam | `C:\Program Files (x86)\Steam\steamapps\common\FINAL FANTASY XIV Online\game\sqpack` |
+
+亦可以明確指定：
+
+```powershell
+.\Restore-GameResources.cmd -SqPack "C:\Program Files (x86)\SquareEnix\FINAL FANTASY XIV - A Realm Reborn\game\sqpack"
+```
+
+路徑內應該有 `ffxiv/*.index`，以及已安裝資料片嘅 `ex1/` 等目錄。亦可先設定 `$env:FF14_SQPACK = 'C:\Program Files (x86)\SquareEnix\FINAL FANTASY XIV - A Realm Reborn\game\sqpack'`，之後直接執行 `.\Restore-GameResources.cmd`。
+
+`-SqPack` 優先於環境變數，兩者都優先於自動偵測。未指定且預設位置搵唔到先詢問；`-CheckOnly` 則直接報錯，唔會等待輸入。明確指定嘅路徑無效會報錯，唔會靜靜地改用另一個 client。自訂磁碟／Steam library 請明確指定。
 
 只檢查路徑、SDK 同 ffmpeg，唔掃描或寫入資源：
 
 ```powershell
-.\Restore-GameResources.cmd -SqPack "D:\Games\FFXIV\game\sqpack" -CheckOnly
+.\Restore-GameResources.cmd -SqPack "C:\Program Files (x86)\SquareEnix\FINAL FANTASY XIV - A Realm Reborn\game\sqpack" -CheckOnly
 ```
 
 `CheckOnly` 唔會讀完整遊戲資料，成功唔代表 client schema 一定相容。正式掃描先會驗證資源能否讀取。
 
-每次完整重建都會重新掃描 client，再匯出 reference、名稱配對、NPC 表同原錄音索引。唔會重用另一個 client 嘅舊 `voice-clips.json`。完成後重開 FF14Sound；正常放喺 repo `data/` 嘅 catalog 會自動找到。
+每次完整重建都會重新掃描 client，再匯出 reference、名稱配對、NPC 表同原錄音索引。唔會重用另一個 client 嘅舊 `voice-clips.json`。完成後重開 FF14 Voice；正常放喺 repo `data/` 嘅 catalog 會自動找到。
 
 ## 會生成啲乜？
 
@@ -44,7 +59,7 @@ Fresh clone 冇遊戲音檔係正常嘅。資源工具會由你已安裝嘅 FF14
 需要同時安裝國際版同繁中版 client。國際版提供日文對白及 ID，繁中版提供可配對嘅官方繁中句子：
 
 ```powershell
-.\Restore-GameResources.cmd -SqPack "D:\Games\FFXIV\game\sqpack" -TraditionalSqPack "E:\Games\FFXIV-TC\game\sqpack"
+.\Restore-GameResources.cmd -SqPack "C:\Program Files (x86)\SquareEnix\FINAL FANTASY XIV - A Realm Reborn\game\sqpack" -TraditionalSqPack "E:\Games\FFXIV-TC\game\sqpack"
 ```
 
 除基本聲音庫外，會自動建立：
@@ -59,13 +74,13 @@ Fresh clone 冇遊戲音檔係正常嘅。資源工具會由你已安裝嘅 FF14
 單一語言可以用 CMD 入口：
 
 ```powershell
-.\Restore-GameResources.cmd -SqPack "D:\Games\FFXIV\game\sqpack" -DialogueLanguages ja
+.\Restore-GameResources.cmd -SqPack "C:\Program Files (x86)\SquareEnix\FINAL FANTASY XIV - A Realm Reborn\game\sqpack" -DialogueLanguages ja
 ```
 
 多語言用 PowerShell 腳本（陣列參數）：
 
 ```powershell
-& .\tools\Restore-GameResources.ps1 -SqPack 'D:\Games\FFXIV\game\sqpack' -DialogueLanguages ja,en,de,fr
+& .\tools\Restore-GameResources.ps1 -SqPack 'C:\Program Files (x86)\SquareEnix\FINAL FANTASY XIV - A Realm Reborn\game\sqpack' -DialogueLanguages ja,en,de,fr
 ```
 
 此步只建立索引，唔會開始大量 TTS。預配喺 app「全 client 預配／進度…」開始；詳見 [進階指南](advanced.md)。
@@ -79,14 +94,14 @@ Fresh clone 冇遊戲音檔係正常嘅。資源工具會由你已安裝嘅 FF14
 原有捷徑仍然可用，全部接受自訂路徑，亦支援 `FF14_SQPACK`：
 
 ```powershell
-.\Build-VoiceLibrary.cmd "D:\Games\FFXIV\game\sqpack"
-.\Build-NpcTable.cmd "D:\Games\FFXIV\game\sqpack"
-.\Match-VoiceNames.cmd "D:\Games\FFXIV\game\sqpack"
+.\Build-VoiceLibrary.cmd "C:\Program Files (x86)\SquareEnix\FINAL FANTASY XIV - A Realm Reborn\game\sqpack"
+.\Build-NpcTable.cmd "C:\Program Files (x86)\SquareEnix\FINAL FANTASY XIV - A Realm Reborn\game\sqpack"
+.\Match-VoiceNames.cmd "C:\Program Files (x86)\SquareEnix\FINAL FANTASY XIV - A Realm Reborn\game\sqpack"
 ```
 
 第一個等同完整聲音庫重建；後兩個需要已有 `catalog.json`，只更新指定部分，唔代替 client 更新後嘅完整重掃。
 
-可用 `-OutputRoot 'E:\FF14Sound-resources'` 將生成資料放另一個根目錄（其下仍分 `data/` 同 `artifacts/`）。聲音庫要喺 GUI 指定新 catalog；對白／繁中索引需放回 repo `data/` 或使用對應 CLI 明確指定，唔會自動跟隨 catalog 路徑。工具拒絕把輸出放入遊戲 `game/` 之內。
+可用 `-OutputRoot 'E:\ff14-voice-resources'` 將生成資料放另一個根目錄（其下仍分 `data/` 同 `artifacts/`）。聲音庫要喺 GUI 指定新 catalog；對白／繁中索引需放回 repo `data/` 或使用對應 CLI 明確指定，唔會自動跟隨 catalog 路徑。工具拒絕把輸出放入遊戲 `game/` 之內。
 
 ## 低階 CLI
 

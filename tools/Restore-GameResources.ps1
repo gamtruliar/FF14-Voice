@@ -2,9 +2,9 @@
 .SYNOPSIS
 Rebuild ignored FF14 resources from your installed client (read-only).
 .EXAMPLE
-.\tools\Restore-GameResources.ps1 -SqPack 'D:\Games\FFXIV\game\sqpack'
+.\tools\Restore-GameResources.ps1
 .EXAMPLE
-.\tools\Restore-GameResources.ps1 -SqPack 'D:\Games\FFXIV\game\sqpack' -TraditionalSqPack 'E:\FFXIV TC\game\sqpack'
+.\tools\Restore-GameResources.ps1 -SqPack 'C:\Program Files (x86)\SquareEnix\FINAL FANTASY XIV - A Realm Reborn\game\sqpack'
 #>
 [CmdletBinding()]
 param(
@@ -21,11 +21,30 @@ Set-StrictMode -Version Latest
 $repoRoot = Split-Path -Parent $PSScriptRoot
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) { $OutputRoot = $repoRoot }
 
+function Test-SqPack([string]$Path) {
+    if ([string]::IsNullOrWhiteSpace($Path)) { return $false }
+    $archives = Join-Path $Path 'ffxiv'
+    return (Test-Path -LiteralPath $archives -PathType Container) -and
+        [bool](Get-ChildItem -LiteralPath $archives -Filter '*.index' -File -ErrorAction SilentlyContinue | Select-Object -First 1)
+}
+
+function Find-DefaultSqPack {
+    $programFiles32 = ${env:ProgramFiles(x86)}
+    if ([string]::IsNullOrWhiteSpace($programFiles32)) { $programFiles32 = 'C:\Program Files (x86)' }
+    foreach ($relative in @(
+        'SquareEnix\FINAL FANTASY XIV - A Realm Reborn\game\sqpack',
+        'Steam\steamapps\common\FINAL FANTASY XIV Online\game\sqpack'
+    )) {
+        $candidate = Join-Path $programFiles32 $relative
+        if (Test-SqPack $candidate) { return $candidate }
+    }
+    return $null
+}
+
 function Resolve-SqPack([string]$Path) {
     if (!(Test-Path -LiteralPath $Path -PathType Container)) { throw "SqPack directory not found: $Path" }
     $resolved = (Resolve-Path -LiteralPath $Path).ProviderPath.TrimEnd('\', '/')
-    if (!(Test-Path -LiteralPath (Join-Path $resolved 'ffxiv') -PathType Container) -or
-        !(Get-ChildItem -LiteralPath (Join-Path $resolved 'ffxiv') -Filter '*.index' -File | Select-Object -First 1)) {
+    if (!(Test-SqPack $resolved)) {
         throw "Choose the game\sqpack directory containing ffxiv\*.index: $resolved"
     }
     return $resolved
@@ -47,7 +66,11 @@ function Assert-Report([string]$Path, [switch]$AllowErrors) {
 }
 
 if ([string]::IsNullOrWhiteSpace($SqPack)) {
-    if ($CheckOnly) { throw 'Pass -SqPack or set FF14_SQPACK.' }
+    $SqPack = Find-DefaultSqPack
+    if ($SqPack) { Write-Host "Detected default FF14 installation: $SqPack" }
+}
+if ([string]::IsNullOrWhiteSpace($SqPack)) {
+    if ($CheckOnly) { throw 'No default FF14 installation found. Pass -SqPack or set FF14_SQPACK.' }
     $SqPack = Read-Host 'Path to your international FF14 game\sqpack directory'
 }
 $SqPack = Resolve-SqPack $SqPack.Trim('"')
@@ -113,4 +136,4 @@ if ($Task -eq 'NpcTable') {
     }
 }
 Write-Host "Resources ready: $library"
-Write-Host 'Restart FF14Sound to reload rebuilt resources. For a custom OutputRoot, select its catalog.json in the GUI.'
+Write-Host 'Restart FF14 Voice to reload rebuilt resources. For a custom OutputRoot, select its catalog.json in the GUI.'

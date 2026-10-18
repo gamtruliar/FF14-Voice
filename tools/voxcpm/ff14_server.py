@@ -77,7 +77,7 @@ class SerializedDemo(VoxCPMDemo):
 
 
 def create_app(demo):
-    api = FastAPI(title="FF14Sound VoxCPM")
+    api = FastAPI(title="FF14 Voice VoxCPM")
     versions = RequestVersions()
     gate = getattr(demo, "lock", threading.RLock())
     admission = PriorityGate()

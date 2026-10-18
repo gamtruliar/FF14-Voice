@@ -96,3 +96,34 @@ $global:resourceTestCalls.Clear()
 & $restore -SqPack $client -OutputRoot $out -Task MatchNames
 Assert ($global:resourceTestCalls.Count -eq 2 -and $global:resourceTestCalls[0][4] -eq '--npc-table' -and $global:resourceTestCalls[1][4] -eq '--match-names') 'Partial rebuild dispatch failed.'
 Write-Host 'PASS: resource tool preflight, paths, rescan, optional indexes, partial rebuilds and failure propagation.'
+
+# Exercise discovery without depending on games installed on the test machine.
+$savedProgramFiles = ${env:ProgramFiles(x86)}
+$savedSqPack = $env:FF14_SQPACK
+try {
+    ${env:ProgramFiles(x86)} = Join-Path $testRoot 'Program Files (x86)'
+    $env:FF14_SQPACK = ''
+    $standalone = Join-Path ${env:ProgramFiles(x86)} 'SquareEnix/FINAL FANTASY XIV - A Realm Reborn/game/sqpack'
+    $steam = Join-Path ${env:ProgramFiles(x86)} 'Steam/steamapps/common/FINAL FANTASY XIV Online/game/sqpack'
+    New-Item -ItemType Directory -Path (Join-Path $standalone 'ffxiv') -Force | Out-Null
+    Expect-Failure { & $restore -OutputRoot $out -CheckOnly } 'No default FF14 installation found'
+    foreach ($path in @($steam, $standalone)) {
+        New-Item -ItemType Directory -Path (Join-Path $path 'ffxiv') -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $path 'ffxiv/test.index') -Value 'fixture'
+        $global:resourceTestCalls.Clear()
+        & $restore -OutputRoot $out
+        Assert ($global:resourceTestCalls[0][4] -eq $path) 'Default discovery must prefer a valid standalone install, then Steam.'
+    }
+    $global:resourceTestCalls.Clear()
+    $env:FF14_SQPACK = $tcClient
+    & $restore -OutputRoot $out
+    Assert ($global:resourceTestCalls[0][4] -eq $tcClient) 'FF14_SQPACK must override default locations.'
+    $global:resourceTestCalls.Clear()
+    & $restore -SqPack $client -OutputRoot $out
+    Assert ($global:resourceTestCalls[0][4] -eq $client) 'Explicit SqPack must override environment and defaults.'
+    Expect-Failure { & $restore -SqPack (Join-Path $testRoot 'wrong-explicit-path') -OutputRoot $out -CheckOnly } 'not found'
+} finally {
+    ${env:ProgramFiles(x86)} = $savedProgramFiles
+    $env:FF14_SQPACK = $savedSqPack
+}
+Write-Host 'PASS: default Square Enix/Steam paths, invalid defaults and explicit/environment precedence.'

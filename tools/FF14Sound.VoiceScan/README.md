@@ -3,7 +3,7 @@
 Reads the installed client with Lumina 7.4.0. Does not modify game files.
 
 ```powershell
-dotnet run --project tools/FF14Sound.VoiceScan -- "D:\Games\FFXIV\game\sqpack" "artifacts\game-voices"
+dotnet run --project tools/FF14Sound.VoiceScan -- "C:\Program Files (x86)\SquareEnix\FINAL FANTASY XIV - A Realm Reborn\game\sqpack" "artifacts\game-voices"
 VoxCPM/.venv/Scripts/python.exe tools/prepare_voice_samples.py artifacts/game-voices
 ```
 

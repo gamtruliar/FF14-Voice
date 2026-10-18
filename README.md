@@ -1,8 +1,8 @@
-# FF14Sound
+# FF14 Voice
 
 **想聽住 NPC 講故仔，仲可以配埋廣東話字幕？**
 
-FF14Sound 係一個獨立 Windows app，為《FINAL FANTASY XIV》對白加入即時翻譯同 AI 配音。讀取遊戲中嘅 NPC 名稱及對白，用本機 VoxCPM2 生成聲音；有可用遊戲原聲樣本嘅角色可以 clone 聲線，未配對嘅 NPC 則按描述建立聲音。
+FF14 Voice 係一個獨立 Windows app，為《FINAL FANTASY XIV》對白加入即時翻譯同 AI 配音。讀取遊戲中嘅 NPC 名稱及對白，用本機 VoxCPM2 生成聲音；有可用遊戲原聲樣本嘅角色可以 clone 聲線，未配對嘅 NPC 則按描述建立聲音。
 
 可以揀 **日文原文配音＋廣東話字幕**，亦可以直接聽 **廣東話翻譯配音**。唔需要另外開 TataruHelper GUI。
 
@@ -10,18 +10,20 @@ FF14Sound 係一個獨立 Windows app，為《FINAL FANTASY XIV》對白加入�
 
 ## 示範影片
 
-以下都係 `vdo/` 入面嘅實際影片，**按預覽圖或片名開啟**。內容包含遊戲劇情；如果瀏覽器未能預覽 MOV，可從影片頁下載後播放。
+想即刻試播：clone／下載 repo 後，雙擊 **`Play-Demos.cmd`**，或者用瀏覽器開啟 [`vdo/index.html`](vdo/index.html)，同一頁可以播放全部 5 段影片（有聲音及播放控制）。內容包含遊戲劇情。
+
+下面係 MP4 檔案連結，使用相對路徑，唔需要寫死 GitHub 帳號、repo 名或 branch。GitHub 檔案頁未提供播放時，可按 Download raw file 下載後播放；**預覽圖本身唔係內嵌播放器**。[GitHub README 內嵌播放設定](vdo/README.md#github-readme-內嵌播放)可喺 repo 建立後另加，唔影響本機播放。
 
 | | |
 | --- | --- |
-| [![示範 ctl](docs/images/ctl.jpg)](vdo/ctl.mov) | [![示範 mm1](docs/images/mm1.jpg)](vdo/mm1.mov) |
-| [▶ ctl.mov](vdo/ctl.mov) | [▶ mm1.mov](vdo/mm1.mov) |
-| [![示範 npc](docs/images/npc.jpg)](vdo/npc.mov) | [![示範 tataru](docs/images/tataru.jpg)](vdo/tataru.mov) |
-| [▶ npc.mov](vdo/npc.mov) | [▶ tataru.mov](vdo/tataru.mov) |
+| [![示範 ctl](docs/images/ctl.jpg)](vdo/ctl.mp4) | [![示範 mm1](docs/images/mm1.jpg)](vdo/mm1.mp4) |
+| [開啟／下載 ctl.mp4](vdo/ctl.mp4) | [開啟／下載 mm1.mp4](vdo/mm1.mp4) |
+| [![示範 npc](docs/images/npc.jpg)](vdo/npc.mp4) | [![示範 tataru](docs/images/tataru.jpg)](vdo/tataru.mp4) |
+| [開啟／下載 npc.mp4](vdo/npc.mp4) | [開啟／下載 tataru.mp4](vdo/tataru.mp4) |
 
-[![示範 Timeline 1](docs/images/timeline-1.jpg)](vdo/Timeline%201.mov)
+[![示範 Timeline 1](docs/images/timeline-1.jpg)](vdo/timeline-1.mp4)
 
-[▶ Timeline 1.mov](vdo/Timeline%201.mov)
+[開啟／下載 timeline-1.mp4](vdo/timeline-1.mp4)
 
 ## 有咩功能？
 
@@ -55,8 +57,8 @@ FF14Sound 係一個獨立 Windows app，為《FINAL FANTASY XIV》對白加入�
 喺本 repo 嘅 **Code → HTTPS** 複製網址，再執行（將 `<repo-url>` 換成嗰個網址）：
 
 ```powershell
-git clone --recurse-submodules <repo-url> FF14Sound
-cd FF14Sound
+git clone --recurse-submodules <repo-url> ff14-voice
+cd ff14-voice
 ```
 
 如果已經 clone：
@@ -79,13 +81,21 @@ git submodule update --init --recursive
 
 ### 3. 由自己嘅 client 重建遊戲資源
 
-指定 **`game\sqpack`**，唔係 launcher 所在資料夾。以下路徑只係例子，請換成自己嘅安裝位置：
+一般用預設安裝位置，可以直接執行：
 
 ```powershell
-.\Restore-GameResources.cmd -SqPack "D:\Games\FFXIV\game\sqpack"
+.\Restore-GameResources.cmd
 ```
 
-工具會讀取遊戲檔，建立聲音庫、NPC 名稱表、配對證據同原錄音索引，輸出至 `data/game-voices/`；掃描報告喺 `artifacts/game-voices/`。**唔會修改遊戲檔案。** 冇傳路徑時會詢問，亦可設定環境變數 `FF14_SQPACK`。
+工具會先試 Square Enix 版，再試 Steam 版嘅預設位置。想明確指定時，用 **`game\sqpack`**，唔係 launcher 所在資料夾；Square Enix 版常見預設路徑如下（自訂安裝位置請自行更改）：
+
+```powershell
+.\Restore-GameResources.cmd -SqPack "C:\Program Files (x86)\SquareEnix\FINAL FANTASY XIV - A Realm Reborn\game\sqpack"
+```
+
+Steam 預設位置係 `C:\Program Files (x86)\Steam\steamapps\common\FINAL FANTASY XIV Online\game\sqpack`。工具按目前 Windows 嘅 `ProgramFiles(x86)` 位置偵測；自訂 Steam library 請用 `-SqPack` 指定。
+
+工具會讀取遊戲檔，建立聲音庫、NPC 名稱表、配對證據同原錄音索引，輸出至 `data/game-voices/`；掃描報告喺 `artifacts/game-voices/`。**唔會修改遊戲檔案。** 路徑優先次序：`-SqPack` → 環境變數 `FF14_SQPACK` → 預設位置；全部冇提供／搵唔到先詢問。
 
 呢步係首次使用配音嘅必要步驟：欠缺原錄音索引時，app 會暫停配音。遊戲更新後可再執行同一命令，完成後重開 app。重建會更新生成資源，包括之前挑選過嘅 reference；個人設定另存於 LocalAppData。
 
