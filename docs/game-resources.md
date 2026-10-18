@@ -48,11 +48,11 @@ Fresh clone 冇遊戲音檔係正常嘅。資源工具會由你已安裝嘅 FF14
 | `data/game-voices/references/<代號>/<語言>.wav` | 24 kHz、mono、PCM16 reference；通常挑選完整 5–12 秒片段，最長 12 秒 |
 | `data/game-voices/native-voiced-lines.json` | 略過已有遊戲原錄音嘅對白索引 |
 | `data/game-voices/npc-voice-index.json` | NPC 名稱、多語別名及聲線資料 |
-| `data/game-voices/npc-voices.csv` | NPC 表 |
+| `data/game-voices/npc-voices.csv` | 隨專案提供嘅 NPC 名稱及聲線描述表；重建時會按本機遊戲資料更新 |
 | `data/game-voices/npcs-without-matched-voice.csv` | 未有名稱配對原聲嘅 NPC；唔等於證實無 CV |
 | `data/game-voices/voice-name-candidates.json` | 自動／待確認名稱配對證據 |
 
-以上輸出已由 `.gitignore` 排除。模型喺 `.cache/`；生成配音喺 `data/speech-cache/`；個人設定、手動配對及 NPC 修改喺 `%LOCALAPPDATA%\FF14Sound/`。
+專案已附 [NPC 聲線表](../data/game-voices/npc-voices.csv)，可直接瀏覽角色名稱同聲線描述；其餘表中輸出需由本機遊戲重建，並已由 `.gitignore` 排除。模型喺 `.cache/`；生成配音喺 `data/speech-cache/`；個人設定、手動配對及 NPC 修改喺 `%LOCALAPPDATA%\FF14Sound/`。
 
 ## 官方繁中 → 廣東話
 

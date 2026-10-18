@@ -6,7 +6,8 @@ APIKey/
 **/__pycache__/
 **/.pytest_cache/
 artifacts/
-data/game-voices/
+data/game-voices/*
+!data/game-voices/npc-voices.csv
 data/dialogue-*.jsonl*
 data/batch-*/
 data/speech-cache/
