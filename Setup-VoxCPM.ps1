@@ -1,5 +1,9 @@
 param([switch]$CpuOnly)
 $ErrorActionPreference = 'Stop'
+if (!(Test-Path -LiteralPath (Join-Path $PSScriptRoot 'VoxCPM/uv.lock'))) {
+    throw 'VoxCPM submodule is missing. Run: git submodule update --init --recursive'
+}
+if (!(Get-Command uv -ErrorAction SilentlyContinue)) { throw 'Install uv and reopen your terminal.' }
 $env:UV_CACHE_DIR = Join-Path $PSScriptRoot '.cache/uv'
 Push-Location (Join-Path $PSScriptRoot 'VoxCPM')
 try {

@@ -1,0 +1,6 @@
+[submodule "TataruHelper"]
+	path = TataruHelper
+	url = https://github.com/NightlyRevenger/TataruHelper.git
+[submodule "VoxCPM"]
+	path = VoxCPM
+	url = https://github.com/OpenBMB/VoxCPM.git

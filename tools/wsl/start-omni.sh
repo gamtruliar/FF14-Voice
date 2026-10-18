@@ -10,14 +10,21 @@ exec > >(tee -a "$PROJECT_ROOT/artifacts/omni-server.log") 2>&1
 export PATH="$TASK_ROOT/venv/bin:$PATH"
 export VLLM_WORKER_MULTIPROC_METHOD=spawn
 export HF_HOME="$PROJECT_ROOT/.cache/huggingface"
-export HF_HUB_OFFLINE=1
 export HF_HUB_DISABLE_TELEMETRY=1
 export VLLM_NO_USAGE_STATS=1
 export VLLM_LOGGING_LEVEL=WARNING
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=4
 export TORCHINDUCTOR_CACHE_DIR="$TASK_ROOT/inductor-cache"
-MODEL="$PROJECT_ROOT/.cache/huggingface/hub/models--openbmb--VoxCPM2/snapshots/32279effe8c19989596f05d353d1447f51d9e915"
+MODEL="${FF14_VOXCPM_MODEL:-}"
+if [ -z "$MODEL" ]; then
+  # Reuse this snapshot when cached; download it on a fresh installation.
+  MODEL="$("$TASK_ROOT/venv/bin/python" - <<'PY'
+from huggingface_hub import snapshot_download
+print(snapshot_download("openbmb/VoxCPM2", revision="32279effe8c19989596f05d353d1447f51d9e915"))
+PY
+)"
+fi
 test -f "$MODEL/model.safetensors"
 printf '%s\n' "$$" > "$TASK_ROOT/server.pid"
 exec "$TASK_ROOT/venv/bin/vllm" serve "$MODEL" --omni \

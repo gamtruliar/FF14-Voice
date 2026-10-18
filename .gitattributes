@@ -1,0 +1,5 @@
+# WSL scripts must keep LF after checkout on Windows.
+*.sh text eol=lf
+*.cmd text eol=crlf
+*.mov binary
+*.jpg binary

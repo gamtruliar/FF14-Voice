@@ -32,7 +32,7 @@ if (!$existing) {
     $env:MODELSCOPE_CACHE = Join-Path $PSScriptRoot '.cache/modelscope'
     $env:GRADIO_ANALYTICS_ENABLED = 'False'
     $python = Join-Path $PSScriptRoot 'VoxCPM/.venv/Scripts/python.exe'
-    $gateway = Start-Process -FilePath $python -ArgumentList @('-u', 'ff14_server.py', '--omni-url', $omniUrl) -WorkingDirectory (Join-Path $PSScriptRoot 'VoxCPM') -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $artifactFolder 'omni-gateway.stdout.log') -RedirectStandardError (Join-Path $artifactFolder 'omni-gateway.stderr.log')
+    $gateway = Start-Process -FilePath $python -ArgumentList @('-u', '../tools/voxcpm/ff14_server.py', '--omni-url', $omniUrl) -WorkingDirectory (Join-Path $PSScriptRoot 'VoxCPM') -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $artifactFolder 'omni-gateway.stdout.log') -RedirectStandardError (Join-Path $artifactFolder 'omni-gateway.stderr.log')
     $gateway.Id | Set-Content (Join-Path $artifactFolder 'omni-gateway.pid')
     $deadline = (Get-Date).AddMinutes(1)
     while ($true) {

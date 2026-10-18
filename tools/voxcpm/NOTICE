@@ -1,0 +1,8 @@
+FF14Sound's app.py is adapted from OpenBMB/VoxCPM app.py at
+cce58a5b59303c9bd63d12f23afe6a49a4a80c59, licensed under Apache-2.0.
+The FF14Sound adaptation adds speech language controls, reference handling,
+and integration with the local FF14Sound API. See LICENSE in this directory.
+Upstream: https://github.com/OpenBMB/VoxCPM
+
+The other modules in this directory implement the FF14Sound integration.
+The upstream VoxCPM library and assets remain in the VoxCPM submodule.
