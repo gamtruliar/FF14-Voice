@@ -35,6 +35,18 @@ https://github.com/user-attachments/assets/1ce9aebe-65db-4dab-b8ca-cb4507443e47
 
 ## 開始之前
 
+### 自動安裝：GGUF 量化版（測試中）
+
+Windows 10 22H2／Windows 11、GTX 16／RTX 20 系列或更新嘅 NVIDIA 顯卡，可以試以下流程。**1660 Super 開住 FF14 嘅效果及速度尚未實機驗證。**
+
+1. 更新 NVIDIA 驅動，下載 repo 並解壓到自己嘅資料夾。
+2. 雙擊 **`Install-FF14Voice.cmd`**，依畫面完成 Windows 管理員授權。安裝器會下載所需工具及量化模型、由已安裝嘅 FF14 抽取資源，完成後開啟 app；毋須 WSL。
+3. 揀遊戲文字語言、翻譯目標及配音方式，開 FF14，再按「連接 FF14」。全新設定會選 Google 翻譯，毋須 API key；翻譯對白會傳送至 Google，亦可改用其他服務。
+
+首次安裝下載及編譯較多，請預留數十 GB 空間。搵唔到遊戲時會提示輸入 `game\sqpack`；中斷或要求重開機後，再雙擊安裝檔續跑。之後使用只需雙擊 **`Start-FF14Voice.cmd`**。詳細要求及排錯見 [GGUF 安裝指南](docs/gguf.md)。
+
+### 手動安裝需要
+
 | 需要 | 用途 |
 | --- | --- |
 | Windows x64 | 執行桌面程式及讀取遊戲對白 |
@@ -47,7 +59,7 @@ https://github.com/user-attachments/assets/1ce9aebe-65db-4dab-b8ca-cb4507443e47
 
 首次安裝需要下載依賴同模型，請預留磁碟空間。開發機用 RTX 3090；實際延遲受句長、模型、遊戲負載及翻譯服務影響。
 
-## 快速上手
+## 手動安裝與使用
 
 ### 1. 下載完整 repo
 
@@ -62,7 +74,7 @@ cd ff14-voice
 git submodule update --init --recursive
 ```
 
-請用 Git clone；GitHub 嘅 ZIP 唔包含 submodule 內容。`TataruHelper/` 同 `VoxCPM/` 都要下載完整。
+手動安裝請用 Git clone；`TataruHelper/` 同 `VoxCPM/` 都要下載完整。上面嘅自動安裝器亦支援 ZIP，會自行補回缺少嘅 submodule。
 
 ### 2. 安裝配音環境
 
@@ -138,6 +150,7 @@ Gemini：將自己嘅 key 存成單行文字檔，喺 GUI 選取，再按「更�
 
 - [資源重建指南](docs/game-resources.md)：建立聲音庫、加入繁中對白、更新資源及排錯。
 - [進階設定與開發](docs/advanced.md)：WSL2 / vLLM-Omni 串流、字幕、聲線、快取、背景預配、詞表及測試。
+- [GGUF 量化版（測試中）](docs/gguf.md)：原生 Windows 串流、CPU／GPU 分擔運算；尚未驗證 GTX 1660 Super 遊戲中表現。
 
 ## 常見問題
 
